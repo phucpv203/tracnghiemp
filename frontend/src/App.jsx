@@ -14,6 +14,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import StudyPage from './pages/StudyPage';
+import TopUpPage from './pages/TopUpPage';
 import ExamPage from './pages/ExamPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
@@ -151,6 +152,14 @@ function App() {
               <AdminProtectedRoute>
                 <AdminCourses />
               </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/topup"
+            element={
+              <ProtectedRoute>
+                <TopUpPage />
+              </ProtectedRoute>
             }
           />
           <Route

@@ -75,6 +75,9 @@ export const apiService = {
   checkUnlock: (userId, courseId) => request(`/progress/${userId}/check-unlock/${courseId}`),
   unlockCourse: (userId, courseId) => request(`/progress/${userId}/unlock/${courseId}`, { method: 'POST' }),
 
+  // ===== Top-up =====
+  topUp: (points) => request('/progress/topup', { method: 'POST', body: JSON.stringify({ points }) }),
+
   // ===== Exams =====
   getExam: (courseId) => request(`/exams/${courseId}`),
   submitExam: (courseId, answers) =>

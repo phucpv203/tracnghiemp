@@ -126,9 +126,15 @@ export default function DashboardPage() {
           )}
         </div>
         <div className="flex items-center gap-4">
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-3 text-center">
+          <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-3 text-center relative">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">Điểm của bạn</p>
             <p className="text-2xl font-bold text-amber-700">{userPoints}</p>
+            <button
+              onClick={() => navigate('/topup')}
+              className="mt-2 w-full rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition"
+            >
+              + Nạp thêm điểm
+            </button>
           </div>
           <button onClick={onLogout} className="self-start rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
             Đăng xuất

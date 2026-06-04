@@ -68,6 +68,41 @@ router.get('/:userId/check-unlock/:courseId', async (req, res) => {
 });
 
 /**
+ * POST /progress/topup
+ * Nạp thêm điểm (100, 200, 300)
+ */
+router.post('/topup', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { points } = req.body;
+
+    const allowed = [100, 200, 300];
+    if (!allowed.includes(points)) {
+      return res.status(400).json({ message: 'Chỉ chấp nhận gói 100, 200 hoặc 300 điểm.' });
+    }
+
+    const userRes = await query('SELECT points FROM users WHERE id = $1', [userId]);
+    if (!userRes.rows.length) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+    }
+
+    await query('UPDATE users SET points = points + $1, updated_at = NOW() WHERE id = $2', [points, userId]);
+
+    const updated = await query('SELECT points FROM users WHERE id = $1', [userId]);
+    const totalPoints = Number(updated.rows[0].points);
+
+    res.json({
+      success: true,
+      message: `Nạp ${points} điểm thành công!`,
+      addedPoints: points,
+      totalPoints
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
  * POST /progress/:userId/unlock/:courseId
  * Unlock a course by spending points
  */
