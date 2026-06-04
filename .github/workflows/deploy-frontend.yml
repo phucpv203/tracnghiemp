@@ -42,6 +42,9 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          # Tự động bật GitHub Pages nếu chưa bật (không cần vào Settings làm thủ công)
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
