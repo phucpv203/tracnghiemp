@@ -3,6 +3,7 @@
  *
  * - Verify JWT signature
  * - Check token_version trong DB có khớp với version trong token không
+ *   (nếu cột token_version chưa tồn tại → fallback version=0 để tương thích ngược)
  * - Nếu không khớp → 401 (user đã đăng nhập ở nơi khác)
  * - Nếu khớp → gắn req.user = { id, email, role, version } để route dùng
  */
@@ -17,9 +18,26 @@ if (SECRET.length < 32) {
   throw new Error('JWT_SECRET quá ngắn, cần ≥ 32 ký tự.');
 }
 
+// Cache trạng thái cột token_version (true = có, false = chưa)
+let HAS_TOKEN_VERSION = null;
+async function checkTokenVersionColumn() {
+  if (HAS_TOKEN_VERSION !== null) return HAS_TOKEN_VERSION;
+  try {
+    await query('SELECT token_version FROM users LIMIT 1');
+    HAS_TOKEN_VERSION = true;
+  } catch (e) {
+    if (/column .*token_version.* does not exist/i.test(e.message)) {
+      HAS_TOKEN_VERSION = false;
+      console.warn('[auth] ⚠️  Cột token_version chưa tồn tại. Tính năng "1 tài khoản 1 thiết bị" sẽ tạm thời bị tắt. Hãy chạy file backend/db/migration-token-version.sql trong Supabase SQL Editor.');
+    } else {
+      throw e;
+    }
+  }
+  return HAS_TOKEN_VERSION;
+}
+
 /**
  * Middleware bắt buộc đăng nhập
- * Trả về 401 nếu thiếu token / token sai / token_version không khớp
  */
 export async function requireAuth(req, res, next) {
   try {
@@ -36,17 +54,17 @@ export async function requireAuth(req, res, next) {
       return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn.', code: 'INVALID_TOKEN' });
     }
 
-    // Check token_version trong DB
-    const result = await query(
-      'SELECT id, email, role, token_version FROM users WHERE id = $1',
-      [payload.sub]
-    );
+    const hasVersion = await checkTokenVersionColumn();
+    const sql = hasVersion
+      ? 'SELECT id, email, role, token_version FROM users WHERE id = $1'
+      : 'SELECT id, email, role, 0 AS token_version FROM users WHERE id = $1';
+    const result = await query(sql, [payload.sub]);
     if (!result.rows.length) {
       return res.status(401).json({ message: 'Tài khoản không tồn tại.', code: 'USER_NOT_FOUND' });
     }
 
     const user = result.rows[0];
-    if (Number(user.token_version) !== Number(payload.v)) {
+    if (hasVersion && Number(user.token_version) !== Number(payload.v)) {
       return res.status(401).json({
         message: 'Phiên đăng nhập đã hết hạn. Bạn đang đăng nhập ở nơi khác.',
         code: 'SESSION_REPLACED',
@@ -57,7 +75,7 @@ export async function requireAuth(req, res, next) {
       id: Number(user.id),
       email: user.email,
       role: user.role,
-      version: Number(user.token_version),
+      version: hasVersion ? Number(user.token_version) : 0,
     };
     next();
   } catch (error) {
@@ -68,7 +86,6 @@ export async function requireAuth(req, res, next) {
 
 /**
  * Middleware bắt buộc role admin
- * Phải đặt SAU requireAuth
  */
 export function requireAdmin(req, res, next) {
   if (!req.user) {

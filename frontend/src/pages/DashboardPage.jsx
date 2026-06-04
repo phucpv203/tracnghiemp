@@ -76,18 +76,24 @@ export default function DashboardPage() {
   const handleUnlock = async (courseId) => {
     setUnlockingLoading(true);
     try {
-      const userId = user?.id || 1;
+      // Lấy userId từ user context (đã đăng nhập)
+      const userId = user?.id;
+      if (!userId) {
+        throw new Error('Chưa có thông tin user. Vui lòng đăng nhập lại.');
+      }
+      console.log('[Dashboard] Unlock course:', { userId, courseId });
       const result = await apiService.unlockCourse(userId, courseId);
       if (result.success) {
         // Cập nhật điểm ngay lập tức trên UI
         setUserPoints(result.remainingPoints);
         // Thêm progress mới vào state (không cần gọi lại API)
-        setProgress(prev => [...prev, { courseId, userId, status: 'learning', score: 0 }]);
+        setProgress((prev) => [...prev, { courseId, userId, status: 'learning', score: 0 }]);
         // Hiện toast thành công
         setToast({ message: result.message || 'Mở khóa thành công!', type: 'success' });
         setTimeout(() => setToast(null), 3000);
       }
     } catch (error) {
+      console.error('[Dashboard] Unlock error:', error);
       setToast({ message: error.message || 'Không thể mở khóa môn học.', type: 'error' });
       setTimeout(() => setToast(null), 3000);
     } finally {

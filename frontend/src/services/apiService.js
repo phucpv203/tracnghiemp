@@ -24,11 +24,16 @@ async function request(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const method = options.method || 'GET';
+  console.log(`[api] ${method} ${path}`, { hasToken: !!token });
+
   const response = await fetch(`${API_BASE}${path}`, {
     headers,
     credentials: 'include',
     ...options,
   });
+
+  console.log(`[api] ${method} ${path} → ${response.status}`);
 
   // 401 = token hết hạn / sai / phiên bị thay thế (login ở nơi khác)
   if (response.status === 401) {
@@ -38,6 +43,7 @@ async function request(path, options = {}) {
     } catch (_) {
       // ignore
     }
+    console.warn('[api] 401:', body?.message);
     if (onUnauthorized) {
       onUnauthorized(body?.message || 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
     }
@@ -46,7 +52,8 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.message || 'API request failed');
+    console.error(`[api] ${method} ${path} error:`, errorData);
+    throw new Error(errorData?.message || `API ${response.status}: ${response.statusText}`);
   }
 
   return response.json();

@@ -114,19 +114,14 @@ router.post('/:userId/unlock/:courseId', async (req, res) => {
     await query('UPDATE users SET points = points - $1, updated_at = NOW() WHERE id = $2',
       [requiredPoints, targetId]);
 
-    // Create or update progress record
-    if (existing.rows.length) {
-      await query(
-        `UPDATE user_progress SET status = 'learning', updated_at = NOW() WHERE user_id = $1 AND course_id = $2`,
-        [targetId, courseId]
-      );
-    } else {
-      await query(
-        `INSERT INTO user_progress (user_id, course_id, score, status, started_at)
-         VALUES ($1, $2, 0, 'learning', NOW())`,
-        [targetId, courseId]
-      );
-    }
+    // Create or update progress record (UPSERT để tránh duplicate key nếu race condition)
+    await query(
+      `INSERT INTO user_progress (user_id, course_id, score, status, started_at)
+       VALUES ($1, $2, 0, 'learning', NOW())
+       ON CONFLICT (user_id, course_id) DO UPDATE
+       SET status = 'learning', updated_at = NOW()`,
+      [targetId, courseId]
+    );
 
     // Return updated points
     const updatedUser = await query('SELECT points FROM users WHERE id = $1', [targetId]);
