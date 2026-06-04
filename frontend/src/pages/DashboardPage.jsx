@@ -164,7 +164,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="flex flex-shrink-0">
                   {unlockingCourseId === course.id ? (
-                    <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-lg min-w-[240px]">
+                    <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-lg min-w-[240px] relative z-50">
                       <p className="text-sm font-semibold text-slate-700 mb-3">
                         Mở khóa "{course.title}" với <span className="text-amber-600">{course.requiredPoints} điểm</span>?
                       </p>
