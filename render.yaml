@@ -2,10 +2,11 @@ services:
   - type: web
     name: trac-nghiem-backend
     runtime: node
-    rootDir: backend
     plan: free
-    buildCommand: npm install
-    startCommand: npm start
+    # rootDir không phải lúc nào cũng được Blueprint áp dụng đúng,
+    # nên ta dùng 2 script ở root để cd vào folder backend.
+    buildCommand: bash ./build.sh
+    startCommand: bash ./start.sh
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
