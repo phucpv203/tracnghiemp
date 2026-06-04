@@ -1,0 +1,105 @@
+import { Router } from 'express';
+import {
+  listUsers,
+  updateUser,
+  listCourses,
+  createCourse,
+  updateCourse,
+  addQuestion,
+  updateQuestion,
+  updateUserProgress,
+  importQuestions,
+} from '../services/adminService.js';
+
+const router = Router();
+
+// Users
+router.get('/users', async (req, res) => {
+  try {
+    const users = await listUsers();
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.put('/users/:id', async (req, res) => {
+  try {
+    const user = await updateUser(req.params.id, req.body);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.put('/users/:id/progress/:courseId', async (req, res) => {
+  try {
+    const updated = await updateUserProgress(req.params.id, req.params.courseId, req.body);
+    if (!updated) return res.status(404).json({ message: 'Progress record not found' });
+    res.json({ progress: updated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Courses
+router.get('/courses', async (req, res) => {
+  try {
+    const courses = await listCourses();
+    res.json({ courses });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/courses', async (req, res) => {
+  try {
+    const course = await createCourse(req.body);
+    res.status(201).json({ course });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.put('/courses/:id', async (req, res) => {
+  try {
+    const course = await updateCourse(req.params.id, req.body);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+    res.json({ course });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Questions
+router.post('/questions', async (req, res) => {
+  try {
+    const q = await addQuestion(req.body);
+    res.status(201).json({ question: q });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/questions/import', async (req, res) => {
+  try {
+    const { courseId, questions } = req.body;
+    const imported = await importQuestions(courseId, questions);
+    res.status(201).json({ imported });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.put('/questions/:id', async (req, res) => {
+  try {
+    const q = await updateQuestion(req.params.id, req.body);
+    if (!q) return res.status(404).json({ message: 'Question not found' });
+    res.json({ question: q });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+export default router;

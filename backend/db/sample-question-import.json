@@ -1,0 +1,8 @@
+[
+  {
+    "question": "Dược lý học là môn học nghiên cứu sự tác động qua lại giữa thuốc và cơ thể?",
+    "answers": ["Đúng", "Sai"],
+    "correct": 0,
+    "explanation": "Dược lý học nghiên cứu cả tác động của thuốc lên cơ thể (dược lực học) và sự tác động của cơ thể đối với thuốc (dược động học)"
+  }
+]

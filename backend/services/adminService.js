@@ -1,0 +1,247 @@
+import bcrypt from 'bcryptjs';
+import { query } from './db.js';
+
+function slugify(text) {
+  return text
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9\-]/g, '')
+    .replace(/\-+/g, '-');
+}
+
+export async function listUsers() {
+  const result = await query(
+    `SELECT
+       u.id,
+       u.name,
+       u.email,
+       u.role,
+       u.points,
+       COALESCE(
+         json_agg(
+           json_build_object(
+             'userId', up.user_id,
+             'courseId', up.course_id,
+             'score', up.score,
+             'status', up.status,
+             'lastExamId', up.last_exam_id,
+             'startedAt', up.started_at,
+             'completedAt', up.completed_at,
+             'courseTitle', c.title,
+             'requiredScore', c.required_points
+           ) ORDER BY up.course_id
+         ) FILTER (WHERE up.id IS NOT NULL), '[]'
+       ) AS progress
+     FROM users u
+     LEFT JOIN user_progress up ON up.user_id = u.id
+     LEFT JOIN courses c ON c.id = up.course_id
+     GROUP BY u.id
+     ORDER BY u.id`
+  );
+  return result.rows.map((row) => ({
+    ...row,
+    progress: row.progress || [],
+  }));
+}
+
+export async function updateUser(id, data) {
+  const existing = await query('SELECT id FROM users WHERE id = $1', [Number(id)]);
+  if (!existing.rows.length) return null;
+
+  const updates = [];
+  const values = [Number(id)];
+  let index = 2;
+
+  if (data.name !== undefined) {
+    updates.push(`name = $${index++}`);
+    values.push(data.name);
+  }
+  if (data.role !== undefined) {
+    updates.push(`role = $${index++}`);
+    values.push(data.role);
+  }
+  if (data.points !== undefined) {
+    updates.push(`points = $${index++}`);
+    values.push(Number(data.points));
+  }
+  if (data.password) {
+    const password_hash = await bcrypt.hash(data.password, 10);
+    updates.push(`password_hash = $${index++}`);
+    values.push(password_hash);
+  }
+
+  if (!updates.length) {
+    const result = await query('SELECT id, name, email, role, points FROM users WHERE id = $1', [Number(id)]);
+    return result.rows[0];
+  }
+
+  const result = await query(
+    `UPDATE users SET ${updates.join(', ')} WHERE id = $1 RETURNING id, name, email, role, points`,
+    values
+  );
+  return result.rows[0];
+}
+
+export async function listCourses() {
+  const result = await query('SELECT * FROM courses ORDER BY id');
+  return result.rows;
+}
+
+export async function createCourse(data) {
+  const slug = data.slug || slugify(data.title);
+  const required_points = Number(data.requiredScore || 0);
+  const result = await query(
+    'INSERT INTO courses(title, slug, required_points) VALUES ($1, $2, $3) RETURNING *',
+    [data.title, slug, required_points]
+  );
+  return result.rows[0];
+}
+
+export async function updateCourse(id, data) {
+  const updates = [];
+  const values = [Number(id)];
+  let index = 2;
+
+  if (data.title !== undefined) {
+    updates.push(`title = $${index++}`);
+    values.push(data.title);
+  }
+  if (data.requiredScore !== undefined) {
+    updates.push(`required_points = $${index++}`);
+    values.push(Number(data.requiredScore));
+  }
+
+  if (!updates.length) return null;
+
+  const result = await query(
+    `UPDATE courses SET ${updates.join(', ')} WHERE id = $1 RETURNING *`,
+    values
+  );
+  return result.rows[0];
+}
+
+function normalizeContent(value, explanation) {
+  if (typeof value === 'string') {
+    let output = value;
+    if (explanation) {
+      output += `\n\n${explanation}`;
+    }
+    return output;
+  }
+
+  if (value && typeof value === 'object') {
+    const questionText = value.question || '';
+    const explanationText = value.explanation || explanation || '';
+    return explanationText ? `${questionText}\n\n${explanationText}` : questionText;
+  }
+
+  return explanation ? explanation : '';
+}
+
+export async function addQuestion(data) {
+  const content = normalizeContent(data.content ?? data.question, data.explanation);
+  const difficulty = data.difficulty !== undefined ? Number(data.difficulty) : 1;
+  const courseId = data.courseId !== undefined ? Number(data.courseId) : null;
+
+  const result = await query(
+    'INSERT INTO questions(course_id, content, difficulty) VALUES ($1, $2, $3) RETURNING *',
+    [courseId, content, difficulty]
+  );
+  const question = result.rows[0];
+
+  if (Array.isArray(data.answers)) {
+    const answersInserted = [];
+    for (let i = 0; i < data.answers.length; i++) {
+      const text = data.answers[i];
+      const is_correct = i === Number(data.correct);
+      const aRes = await query(
+        'INSERT INTO answers(question_id, answer_text, is_correct) VALUES ($1, $2, $3) RETURNING *',
+        [Number(question.id), text, is_correct]
+      );
+      answersInserted.push(aRes.rows[0]);
+    }
+    question.answers = answersInserted;
+  }
+
+  return question;
+}
+
+export async function updateQuestion(id, data) {
+  const updates = [];
+  const values = [Number(id)];
+  let index = 2;
+
+  if (data.courseId !== undefined) {
+    updates.push(`course_id = $${index++}`);
+    values.push(Number(data.courseId));
+  }
+  if (data.content !== undefined) {
+    updates.push(`content = $${index++}`);
+    values.push(normalizeContent(data.content, data.explanation));
+  }
+  if (data.difficulty !== undefined) {
+    updates.push(`difficulty = $${index++}`);
+    values.push(Number(data.difficulty));
+  }
+
+  if (!updates.length) return null;
+
+  const result = await query(
+    `UPDATE questions SET ${updates.join(', ')} WHERE id = $1 RETURNING *`,
+    values
+  );
+  return result.rows[0];
+}
+
+export async function importQuestions(courseId, items) {
+  const imported = [];
+
+  const courseRes = await query('SELECT id FROM courses WHERE id = $1', [Number(courseId)]);
+  if (!courseRes.rows.length) {
+    throw new Error(`Course with id ${courseId} not found`);
+  }
+
+  for (const item of items) {
+    if (!item.question || !Array.isArray(item.answers) || item.correct === undefined) continue;
+
+    const content = normalizeContent(item.content ?? item.question, item.explanation);
+    const difficulty = Number(item.difficulty ?? 1);
+
+    const qRes = await query(
+      'INSERT INTO questions(course_id, content, difficulty) VALUES ($1, $2, $3) RETURNING *',
+      [Number(courseId), content, difficulty]
+    );
+
+    const q = qRes.rows[0];
+
+    const answersInserted = [];
+    for (let i = 0; i < item.answers.length; i++) {
+      const text = item.answers[i];
+      const is_correct = i === Number(item.correct);
+      const aRes = await query(
+        'INSERT INTO answers(question_id, answer_text, is_correct) VALUES ($1, $2, $3) RETURNING *',
+        [Number(q.id), text, is_correct]
+      );
+      answersInserted.push(aRes.rows[0]);
+    }
+
+    imported.push({ question: q, answers: answersInserted });
+  }
+
+  return imported;
+}
+
+export async function updateUserProgress(userId, courseId, data) {
+  const values = [Number(userId), Number(courseId), Number(data.score ?? 0), data.status || 'learning', data.lastExamId ?? null];
+  const result = await query(
+    `INSERT INTO user_progress(user_id, course_id, score, status, last_exam_id)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (user_id, course_id)
+     DO UPDATE SET score = EXCLUDED.score, status = EXCLUDED.status, last_exam_id = EXCLUDED.last_exam_id, updated_at = now()
+     RETURNING *`,
+    values
+  );
+  return result.rows[0];
+}

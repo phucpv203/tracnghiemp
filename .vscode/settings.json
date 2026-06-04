@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd 'c:\\\\Users\\\\Admin\\\\Downloads\\\\code\\\\trac nghiem v1' ; powershell -NoProfile -Command \"Stop-Process -Id 8384 -Force\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
