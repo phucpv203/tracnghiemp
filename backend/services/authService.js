@@ -2,7 +2,17 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from './db.js';
 
-const SECRET = process.env.JWT_SECRET || 'quiz-secret-key';
+// Bắt buộc phải có JWT_SECRET ở môi trường production.
+// Nếu thiếu thì fail sớm để tránh dùng secret yếu mặc định.
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) {
+  throw new Error(
+    'JWT_SECRET chưa được set! Vào Render Dashboard → Environment → thêm biến JWT_SECRET.'
+  );
+}
+if (SECRET.length < 32) {
+  throw new Error('JWT_SECRET quá ngắn, cần ít nhất 32 ký tự để an toàn.');
+}
 
 export async function registerUser({ name, email, password }) {
   const existing = await query('SELECT id FROM users WHERE email = $1', [email]);

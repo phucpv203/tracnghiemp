@@ -53,8 +53,7 @@ Lý do: Render tự detect Node từ `package.json` ở root và mặc định c
 1. Vào **Settings → Secrets and variables → Actions → New repository secret**:
    - Name: `VITE_API_URL`
    - Value: `https://trac-nghiem-backend.onrender.com`
-2. Vào **Settings → Pages**:
-   - Source: chọn **GitHub Actions** (không chọn branch).
+2. ~~Vào **Settings → Pages**: Source = **GitHub Actions**~~ — Workflow `configure-pages@v5` đã có `enablement: true` nên **tự bật Pages cho bạn**, không cần vào Settings.
 3. Push code lên branch `main` → workflow `.github/workflows/deploy-frontend.yml` tự chạy.
 4. Sau ~1-2 phút, FE sẽ ở: `https://<user>.github.io/tracnghiemp/`.
 5. Quay lại Render, set `FRONTEND_URL` = URL GH Pages vừa có → service tự redeploy.
@@ -103,6 +102,8 @@ Sau khi push, vào tab **Actions** của repo để xem workflow build & deploy.
 
 ## ❓ Troubleshooting
 
+- **"Get Pages site failed / Not Found"**: GitHub Pages chưa được bật cho repo. Workflow đã có `enablement: true` để tự bật, nhưng nếu vẫn lỗi → vào **Settings → Pages → Source = GitHub Actions** thủ công rồi chạy lại workflow.
+- **Login báo lỗi, Network gọi `http://localhost:4000` thay vì Render**: Bạn **chưa set secret `VITE_API_URL` trong GitHub repo**. Vào **Settings → Secrets and variables → Actions → New repository secret** với Name=`VITE_API_URL`, Value=`https://trac-nghiem-backend.onrender.com`. Push lại để workflow build lại với env đúng.
 - **Trang trắng trên GH Pages**: mở DevTools → Console. Thường do path asset sai. Kiểm tra `base: './'` trong `vite.config.js`.
 - **CORS error**: chắc chắn `FRONTEND_URL` trên Render đúng domain GH Pages (không có trailing slash).
 - **"Couldn't find a package.json" trên Render**: Render auto-detect Node từ root `package.json` của repo này. Script `start` trong đó đã `cd backend && node index.js`. Nếu vẫn lỗi (thường do service cũ cache cấu hình) → vào Render Dashboard → Service → Settings → Build & Deploy → set **Build Command** = `npm run build`, **Start Command** = `npm start`, **Root Directory** = (trống).
