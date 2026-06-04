@@ -27,7 +27,7 @@ Kiến trúc: **1 repo (monorepo)** → FE deploy GitHub Pages, BE deploy Render
 
 1. Push code lên GitHub (xem bước 4).
 2. Vào https://render.com → **New +** → **Blueprint** → chọn repo vừa push.
-3. Render tự đọc file `render.yaml` ở root → tạo service `trac-nghiem-backend` chạy `build.sh` / `start.sh` (2 script này `cd` vào folder `backend/` rồi mới chạy npm).
+3. Render tự đọc `package.json` ở root → tạo service `trac-nghiem-backend`. Script `start` trong root `package.json` sẽ `cd backend && npm install && node index.js`.
 4. Vào **Environment** của service, set các biến:
    - `DATABASE_URL` = connection string Supabase
    - `JWT_SECRET` = chuỗi random dài (vd: `openssl rand -hex 32`)
@@ -36,12 +36,15 @@ Kiến trúc: **1 repo (monorepo)** → FE deploy GitHub Pages, BE deploy Render
 
 ⚠️ **Lưu ý free tier Render**: server "ngủ" sau 15 phút không có request. Request đầu tiên sẽ mất ~30s.
 
-⚠️ **Nếu vẫn lỗi "Couldn't find a package.json"** (Blueprint cũ không nhận `bash ./build.sh`): Vào **Service → Settings → Build & Deploy**, chỉnh thủ công:
-- **Root Directory**: `backend`
-- **Build Command**: `npm install`
-- **Start Command**: `npm start`
-- **Health Check Path**: `/health`
-Sau đó bấm **Save Changes** → **Manual Deploy** → **Deploy latest commit**.
+⚠️ **Nếu service cũ vẫn báo "Couldn't find a package.json"** (do service đã được tạo từ lần trước với cấu hình cũ):
+1. Vào **Service → Settings → Build & Deploy**, chỉnh thủ công:
+   - **Root Directory**: *(để trống)*
+   - **Build Command**: `npm run build`
+   - **Start Command**: `npm start`
+   - **Health Check Path**: `/health`
+2. **Save Changes** → **Manual Deploy** → **Deploy latest commit**.
+
+Lý do: Render tự detect Node từ `package.json` ở root và mặc định chạy `yarn start`. Root `package.json` của repo này có script `start` = `cd backend && node index.js`, nên hoạt động đúng.
 
 ---
 
@@ -92,8 +95,8 @@ Sau khi push, vào tab **Actions** của repo để xem workflow build & deploy.
 | `frontend/.env.development` | Chứa `VITE_API_URL` cho local dev |
 | `.github/workflows/deploy-frontend.yml` | Tự động build & deploy FE khi push `main` |
 | `backend/index.js` | CORS whitelist qua `FRONTEND_URL`, thêm `/health` |
-| `render.yaml` | Cấu hình deploy BE lên Render (dùng `build.sh`/`start.sh`) |
-| `build.sh` / `start.sh` | Script `cd backend && npm ...` ở root cho monorepo |
+| `render.yaml` | Cấu hình deploy BE lên Render Blueprint |
+| `package.json` (root) | Proxy scripts `cd backend && npm ...` để Render auto-detect đúng |
 | `backend/.env.example` | Mẫu biến môi trường (không commit file `.env` thật) |
 
 ---
@@ -102,7 +105,7 @@ Sau khi push, vào tab **Actions** của repo để xem workflow build & deploy.
 
 - **Trang trắng trên GH Pages**: mở DevTools → Console. Thường do path asset sai. Kiểm tra `base: './'` trong `vite.config.js`.
 - **CORS error**: chắc chắn `FRONTEND_URL` trên Render đúng domain GH Pages (không có trailing slash).
-- **"Couldn't find a package.json" trên Render**: Render đang chạy lệnh ở root repo. Repo này đã có `build.sh` / `start.sh` ở root gọi `cd backend && npm ...` (xem `render.yaml`). Nếu vẫn lỗi → vào Render Dashboard → Service → Settings → Build & Deploy → set **Root Directory** = `backend`.
+- **"Couldn't find a package.json" trên Render**: Render auto-detect Node từ root `package.json` của repo này. Script `start` trong đó đã `cd backend && node index.js`. Nếu vẫn lỗi (thường do service cũ cache cấu hình) → vào Render Dashboard → Service → Settings → Build & Deploy → set **Build Command** = `npm run build`, **Start Command** = `npm start`, **Root Directory** = (trống).
 - **BE không response**: vào Render → Logs xem có lỗi gì. Free tier ngủ → đợi 30s.
 - **DB connection failed**: kiểm tra `DATABASE_URL` đúng chưa, có dùng **Transaction pooler** (port 6543) không, **Session pooler** (port 5432) cũng được.
 - **Routing 404 khi refresh**: do đã dùng `HashRouter` nên URL có dạng `/#/courses/...` — refresh OK.

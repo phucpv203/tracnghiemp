@@ -3,17 +3,17 @@ services:
     name: trac-nghiem-backend
     runtime: node
     plan: free
-    # rootDir không phải lúc nào cũng được Blueprint áp dụng đúng,
-    # nên ta dùng 2 script ở root để cd vào folder backend.
-    buildCommand: bash ./build.sh
-    startCommand: bash ./start.sh
+    # Render sẽ tự detect Node từ package.json ở root.
+    # Script "start" trong root package.json sẽ cd vào backend/ rồi chạy node index.js.
+    buildCommand: npm run build
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false   # set trên dashboard Render, lấy từ Supabase
+        sync: false
       - key: JWT_SECRET
         sync: false
       - key: FRONTEND_URL
-        sync: false   # ví dụ: https://<user>.github.io
+        sync: false
