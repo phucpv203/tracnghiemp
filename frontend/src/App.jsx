@@ -1,20 +1,14 @@
 /**
  * App.jsx - Component chính của ứng dụng
- * 
- * Quản lý:
- * - Authentication state (user đăng nhập)
- * - Routing đến các trang
- * - Protected routes (cần đăng nhập)
- * - Admin routes (cần role admin)
- * 
- * Luồng hoạt động:
- * 1. Khi app load, kiểm tra localStorage xem có user không
- * 2. Nếu có, set vào state và cho phép truy cập các trang protected
- * 3. Nếu không, redirect về /login
- * 4. Khi login thành công, lưu user vào localStorage và redirect
- * 5. Khi logout, xóa user khỏi localStorage và redirect về /login
+ *
+ * Tính năng:
+ * 1. Lưu đăng nhập: khi load, verify token với backend qua /auth/me.
+ *    Nếu token hợp lệ → set user, không cần login lại.
+ *    Nếu token sai/hết hạn/phiên bị thay thế → auto logout.
+ * 2. 1 tài khoản 1 thiết bị: polling /auth/me mỗi 30 giây.
+ *    Nếu backend trả 401 với code=SESSION_REPLACED → user bị đá ra.
  */
-import { useState, useEffect, createContext } from 'react';
+import { useState, useEffect, createContext, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -27,51 +21,99 @@ import AdminCourses from './pages/AdminCourses';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import { authService } from './services/authService';
+import { apiService, setOnUnauthorized } from './services/apiService';
 
-/**
- * AuthContext - Context để chia sẻ thông tin user và các hàm auth
- * cho toàn bộ ứng dụng
- */
 export const AuthContext = createContext(null);
+
+const POLL_INTERVAL_MS = 30 * 1000; // 30 giây
 
 function App() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const pollRef = useRef(null);
 
-  /**
-   * Khi app mount, kiểm tra xem có user trong localStorage không
-   * (duy trì phiên đăng nhập)
-   */
+  // Verify token khi app mount
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
+    let cancelled = false;
+    (async () => {
+      const token = authService.getToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const { user: fresh } = await apiService.me();
+        if (!cancelled) {
+          authService.saveUser(fresh);
+          setUser(fresh);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          // /auth/me trả 401 → token hết hạn/sai/bị thay thế
+          authService.clearUser();
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  /**
-   * Xử lý khi user đăng nhập thành công
-   * - Lưu user vào localStorage
-   * - Set state
-   * - Redirect dựa trên role
-   */
-  const onLogin = (userData) => {
+  // Polling để phát hiện phiên bị thay thế từ thiết bị khác
+  useEffect(() => {
+    if (!user) {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      return;
+    }
+    pollRef.current = setInterval(async () => {
+      try {
+        await apiService.me(); // nếu 401 sẽ trigger onUnauthorized
+      } catch (_) {
+        // đã được xử lý trong request()
+      }
+    }, POLL_INTERVAL_MS);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = null;
+    };
+  }, [user]);
+
+  // Đăng ký callback khi nhận 401 từ bất kỳ API call nào
+  useEffect(() => {
+    setOnUnauthorized((message) => {
+      authService.clearUser();
+      setUser(null);
+      // Hiển thị alert đơn giản, có thể thay bằng toast
+      alert(message);
+      navigate('/login', { replace: true });
+    });
+  }, [navigate]);
+
+  const onLogin = (userData, token) => {
     authService.saveUser(userData);
+    if (token) authService.saveToken(token);
     setUser(userData);
     navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
   };
 
-  /**
-   * Xử lý khi user đăng xuất
-   * - Xóa user khỏi localStorage
-   * - Clear state
-   * - Redirect về /login
-   */
   const onLogout = () => {
     authService.clearUser();
     setUser(null);
     navigate('/login');
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
+        Đang tải...
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ user, onLogin, onLogout }}>

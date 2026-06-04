@@ -8,14 +8,19 @@ import adminRoutes from './routes/admin.js';
 
 const app = express();
 
-// Danh sách origin được phép gọi API
+// Danh sách origin được phép gọi API.
+// QUAN TRỌNG: Origin = protocol + host + port, KHÔNG bao gồm path.
+//   VD đúng:    https://phucpv203.github.io
+//   VD sai:     https://phucpv203.github.io/tracnghiemp/
+//   VD sai:     https://phucpv203.github.io/    (có trailing slash)
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
-  // GitHub Pages: https://<user>.github.io  hoặc  https://<user>.github.io/<repo>
-  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL,  // Set trên Render, vd: https://phucpv203.github.io
 ].filter(Boolean);
+
+console.log('[CORS] Allowed origins:', allowedOrigins);
 
 app.use(
   cors({
@@ -24,6 +29,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
+      console.warn(`[CORS] Blocked request from origin: "${origin}"`);
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,

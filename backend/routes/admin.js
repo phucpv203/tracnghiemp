@@ -10,8 +10,12 @@ import {
   updateUserProgress,
   importQuestions,
 } from '../services/adminService.js';
+import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
+
+// Tất cả API admin đều cần đăng nhập + role admin
+router.use(requireAuth, requireAdmin);
 
 // Users
 router.get('/users', async (req, res) => {

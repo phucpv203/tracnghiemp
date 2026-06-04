@@ -1,36 +1,41 @@
 /**
- * authService - Dịch vụ quản lý xác thực và phiên đăng nhập
- * 
- * Lưu trữ thông tin user vào localStorage để duy trì phiên đăng nhập
- * khi tải lại trang hoặc đóng/mở trình duyệt.
- * 
- * Storage key: 'quiz-app-user'
- * Data format: { id, name, email, role }
+ * authService - Quản lý phiên đăng nhập (user + token)
+ *
+ * Lưu trong localStorage:
+ * - 'quiz-app-user' : thông tin user { id, name, email, role }
+ * - 'quiz-app-token': JWT token
+ *
+ * Khi app load: verify token bằng cách gọi /auth/me.
+ * Nếu token sai/hết hạn/version không khớp → auto logout.
  */
-const STORAGE_KEY = 'quiz-app-user';
+const USER_KEY = 'quiz-app-user';
+const TOKEN_KEY = 'quiz-app-token';
 
 export const authService = {
-  /**
-   * Lưu thông tin user vào localStorage
-   * @param {object} user - Thông tin user { id, name, email, role }
-   */
+  /** Lưu thông tin user */
   saveUser: (user) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+    else localStorage.removeItem(USER_KEY);
   },
-  
-  /**
-   * Lấy thông tin user hiện tại từ localStorage
-   * @returns {object|null} Thông tin user hoặc null nếu chưa đăng nhập
-   */
+
+  /** Lưu token */
+  saveToken: (token) => {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  },
+
+  /** Lấy user từ localStorage (sync) */
   getCurrentUser: () => {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(USER_KEY);
     return raw ? JSON.parse(raw) : null;
   },
-  
-  /**
-   * Xóa thông tin user khỏi localStorage (đăng xuất)
-   */
+
+  /** Lấy token từ localStorage (sync) */
+  getToken: () => localStorage.getItem(TOKEN_KEY),
+
+  /** Xóa sạch (logout local) */
   clearUser: () => {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   },
 };

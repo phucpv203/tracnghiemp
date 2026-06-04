@@ -14,12 +14,16 @@ Kiến trúc: **1 repo (monorepo)** → FE deploy GitHub Pages, BE deploy Render
 ## Bước 1 — Chuẩn bị Supabase (Database)
 
 1. Vào https://supabase.com → **New Project**, đặt tên, đặt password DB.
-2. Mở **SQL Editor** → paste toàn bộ nội dung `backend/db/schema.sql` → **Run**.
-3. **Project Settings → Database** → copy **Connection string (Transaction mode, port 5432)**.
+2. Mở **SQL Editor** → chạy lần lượt:
+   - `backend/db/schema.sql` (tạo bảng)
+   - `backend/db/migration-token-version.sql` (thêm cột `token_version` để hỗ trợ "1 tài khoản 1 thiết bị")
+   - `backend/db/add-user.sql` (tạo user mẫu: `admin@tracnghiem.com` / `admin123` và `user@tracnghiem.com` / `user123`)
+3. **Project Settings → Database** → copy **Connection string (Transaction mode, port 6543)**.
    ```
-   postgresql://postgres.xxxx:PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres
+   postgresql://postgres.XXX:PASSWORD@aws-0-region.pooler.supabase.com:6543/postgres
    ```
-4. Lưu lại: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`.
+   ⚠️ **Phải dùng Pooler URL (IPv4)**, không dùng direct (IPv6).
+4. Lưu lại: `DATABASE_URL`.
 
 ---
 
@@ -97,6 +101,17 @@ Sau khi push, vào tab **Actions** của repo để xem workflow build & deploy.
 | `render.yaml` | Cấu hình deploy BE lên Render Blueprint |
 | `package.json` (root) | Proxy scripts `cd backend && npm ...` để Render auto-detect đúng |
 | `backend/.env.example` | Mẫu biến môi trường (không commit file `.env` thật) |
+| `backend/middleware/auth.js` | **MỚI** — verify JWT + check `token_version` (1 thiết bị 1 tài khoản) |
+| `backend/db/migration-token-version.sql` | **MỚI** — thêm cột `token_version` cho bảng users |
+| `backend/services/authService.js` | Login tăng version, ký JWT có version; thêm `getUserById` cho `/auth/me` |
+| `backend/routes/auth.js` | Thêm endpoint `GET /auth/me` để FE verify token |
+| `backend/routes/progress.js` | Dùng `req.user.id` thay hardcode; gắn `requireAuth` |
+| `backend/routes/exams.js` | Dùng `req.user.id` thay hardcode; gắn `requireAuth` |
+| `backend/routes/admin.js` | Gắn `requireAuth` + `requireAdmin` |
+| `frontend/src/services/apiService.js` | Gắn `Authorization: Bearer <token>`; gọi `onUnauthorized` khi 401 |
+| `frontend/src/services/authService.js` | Lưu/lấy `token` + `user` từ localStorage |
+| `frontend/src/App.jsx` | Verify token với backend khi load; polling 30s; auto-logout khi 401 |
+| `frontend/src/pages/LoginPage.jsx` | Lưu token sau khi login |
 
 ---
 
@@ -105,8 +120,12 @@ Sau khi push, vào tab **Actions** của repo để xem workflow build & deploy.
 - **"Get Pages site failed / Not Found"**: GitHub Pages chưa được bật cho repo. Workflow đã có `enablement: true` để tự bật, nhưng nếu vẫn lỗi → vào **Settings → Pages → Source = GitHub Actions** thủ công rồi chạy lại workflow.
 - **Login báo lỗi, Network gọi `http://localhost:4000` thay vì Render**: Bạn **chưa set secret `VITE_API_URL` trong GitHub repo**. Vào **Settings → Secrets and variables → Actions → New repository secret** với Name=`VITE_API_URL`, Value=`https://trac-nghiem-backend.onrender.com`. Push lại để workflow build lại với env đúng.
 - **Trang trắng trên GH Pages**: mở DevTools → Console. Thường do path asset sai. Kiểm tra `base: './'` trong `vite.config.js`.
-- **CORS error**: chắc chắn `FRONTEND_URL` trên Render đúng domain GH Pages (không có trailing slash).
+- **CORS error "No 'Access-Control-Allow-Origin' header"**: Bạn chưa set `FRONTEND_URL` trên Render. Vào **Render → Service → Environment → Add**: Key=`FRONTEND_URL`, Value=`https://phucpv203.github.io` (CHỈ host, KHÔNG có path `/tracnghiemp/` và KHÔNG có trailing slash). Render tự redeploy. Mở Render Logs để xem `[CORS] Allowed origins:` in ra gì.
+- **Test CORS nhanh (curl)**: `curl -H "Origin: https://phucpv203.github.io" -I https://tracnghiemp.onrender.com/health` → response phải có header `access-control-allow-origin: https://phucpv203.github.io`.
+- **Test CORS trên browser**: Mở https://phucpv203.github.io/tracnghiemp/ → F12 → Network tab → bấm login → xem request /auth/login có status 200 không. Nếu 200 mà vẫn fail ở frontend → xem response body.
 - **"Couldn't find a package.json" trên Render**: Render auto-detect Node từ root `package.json` của repo này. Script `start` trong đó đã `cd backend && node index.js`. Nếu vẫn lỗi (thường do service cũ cache cấu hình) → vào Render Dashboard → Service → Settings → Build & Deploy → set **Build Command** = `npm run build`, **Start Command** = `npm start`, **Root Directory** = (trống).
 - **BE không response**: vào Render → Logs xem có lỗi gì. Free tier ngủ → đợi 30s.
-- **DB connection failed**: kiểm tra `DATABASE_URL` đúng chưa, có dùng **Transaction pooler** (port 6543) không, **Session pooler** (port 5432) cũng được.
+- **DB connection failed / `ENETUNREACH 2406:...`**: Render free tier không reach được IPv6. Phải dùng **Connection Pooler URL** (port 6543 hoặc 5432, có IPv4), KHÔNG dùng direct connection (port 5432 host dạng `db.xxx.supabase.co`). Vào Supabase → Settings → Database → Connection string → chọn tab **Transaction** hoặc **Session** → copy URI → paste vào Render `DATABASE_URL` → Save. Xem Render Logs: phải thấy `[DB] Connection string: postgresql://...****@aws-0-...pooler.supabase.com:6543/postgres`.
+- **"relation does not exist"**: Chưa chạy `schema.sql` trong Supabase SQL Editor. Vào Supabase → SQL Editor → paste nội dung `backend/db/schema.sql` → Run.
+- **"password authentication failed"**: Sai password trong DATABASE_URL. Reset password DB: Supabase → Settings → Database → Database password → Reset.
 - **Routing 404 khi refresh**: do đã dùng `HashRouter` nên URL có dạng `/#/courses/...` — refresh OK.

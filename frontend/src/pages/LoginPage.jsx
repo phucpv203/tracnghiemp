@@ -14,7 +14,8 @@ export default function LoginPage() {
     try {
       setError('');
       const response = await apiService.login({ email, password });
-      onLogin(response.user || { email });
+      // response: { user, token }
+      onLogin(response.user, response.token);
     } catch (err) {
       setError(err.message);
     }
