@@ -27,37 +27,49 @@ export default function TopUpPage() {
 
   // Xử lý khi được redirect về từ PayOS
   useEffect(() => {
-    const status = searchParams.get('status');
+    // PayOS trả về params ở dạng:
+    //   cancel=false, code=00, id=..., orderCode=..., status=PAID
+    // Hoặc dạng custom cũ: status=success/cancelled, orderCode=..., points=...
+    const cancel = searchParams.get('cancel');
+    const payStatus = searchParams.get('status');
     const orderCode = searchParams.get('orderCode');
+    const code = searchParams.get('code');
     const points = searchParams.get('points');
 
-    if (status === 'success' && orderCode) {
-      // Kiểm tra trạng thái thanh toán từ backend
-      (async () => {
-        try {
-          const result = await apiService.checkPayment(orderCode);
-          if (result.status === 'paid') {
-            setToast({
-              message: `Nạp ${result.points} điểm thành công qua PayOS!`,
-              type: 'success',
-            });
-            // Reload để cập nhật điểm
-            setTimeout(() => {
-              setToast(null);
-              navigate('/dashboard', { replace: true });
-            }, 2000);
-          } else {
-            setToast({ message: 'Giao dịch đang được xử lý. Vui lòng kiểm tra lại sau.', type: 'info' });
-            setTimeout(() => setToast(null), 5000);
+    // PayOS redirect: cancel=false & code=00 & status=PAID → thành công
+    // cancel=false & code != 00 → thất bại
+    // cancel=true → huỷ
+    if (orderCode) {
+      if (cancel === 'false' && code === '00') {
+        // Thanh toán thành công: gọi backend kiểm tra + toast
+        (async () => {
+          try {
+            const result = await apiService.checkPayment(orderCode);
+            if (result.status === 'paid') {
+              setToast({
+                message: `✅ Nạp ${result.points} điểm thành công qua PayOS!`,
+                type: 'success',
+              });
+              setTimeout(() => {
+                setToast(null);
+                navigate('/dashboard', { replace: true });
+              }, 2000);
+            } else {
+              setToast({ message: 'Giao dịch đang được xử lý. Vui lòng kiểm tra lại sau.', type: 'info' });
+              setTimeout(() => setToast(null), 5000);
+            }
+          } catch (err) {
+            setToast({ message: err.message || 'Lỗi kiểm tra giao dịch.', type: 'error' });
+            setTimeout(() => setToast(null), 3000);
           }
-        } catch (err) {
-          setToast({ message: err.message || 'Lỗi kiểm tra giao dịch.', type: 'error' });
-          setTimeout(() => setToast(null), 3000);
-        }
-      })();
-    } else if (status === 'cancelled') {
-      setToast({ message: 'Bạn đã huỷ giao dịch thanh toán.', type: 'info' });
-      setTimeout(() => setToast(null), 3000);
+        })();
+      } else if (cancel === 'true') {
+        setToast({ message: 'Bạn đã huỷ giao dịch thanh toán.', type: 'info' });
+        setTimeout(() => setToast(null), 3000);
+      } else if (payStatus === 'cancelled') {
+        setToast({ message: 'Bạn đã huỷ giao dịch thanh toán.', type: 'info' });
+        setTimeout(() => setToast(null), 3000);
+      }
     }
   }, [searchParams, navigate]);
 
