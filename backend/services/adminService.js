@@ -251,6 +251,22 @@ export async function importQuestions(courseId, items) {
   return imported;
 }
 
+export async function deleteUser(id) {
+  const userId = Number(id);
+
+  // Kiểm tra user tồn tại
+  const existing = await query('SELECT id, name, email FROM users WHERE id = $1', [userId]);
+  if (!existing.rows.length) return null;
+
+  // Xoá các bản ghi liên quan trước khi xoá user
+  await query('DELETE FROM user_devices WHERE user_id = $1', [userId]);
+  await query('DELETE FROM payment_history WHERE user_id = $1', [userId]);
+  await query('DELETE FROM user_progress WHERE user_id = $1', [userId]);
+  await query('DELETE FROM users WHERE id = $1', [userId]);
+
+  return { id: userId, deleted: true };
+}
+
 export async function updateUserProgress(userId, courseId, data) {
   const values = [Number(userId), Number(courseId), Number(data.score ?? 0), data.status || 'learning', data.lastExamId ?? null];
   const result = await query(

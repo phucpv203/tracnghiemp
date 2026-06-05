@@ -9,6 +9,8 @@ export default function AdminUsers() {
   const [editingUser, setEditingUser] = useState(null);
   const [passwords, setPasswords] = useState({});
   const [points, setPoints] = useState({});
+  const [deletingUserId, setDeletingUserId] = useState(null);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     apiService.getUsers().then((res) => {
@@ -20,6 +22,24 @@ export default function AdminUsers() {
       setPoints(initialPoints);
     });
   }, []);
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xoá người dùng "${userName}"? Hành động này không thể hoàn tác và sẽ xoá tất cả dữ liệu liên quan (tiến trình, lịch sử thanh toán).`)) {
+      return;
+    }
+    setDeletingUserId(userId);
+    try {
+      await apiService.deleteUser(userId);
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      setToast({ message: `Đã xoá người dùng "${userName}"`, type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      setToast({ message: err.message || 'Lỗi khi xoá người dùng.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
 
   const saveUser = async (id) => {
     const name = document.getElementById(`name-${id}`).value;
@@ -74,9 +94,18 @@ export default function AdminUsers() {
                 <p className="text-sm text-slate-600">{u.email}</p>
                 <p className="text-sm text-slate-600">Role: {u.role}</p>
               </div>
-              <button onClick={() => setEditingUser(editingUser === u.id ? null : u.id)} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
-                {editingUser === u.id ? 'Đóng' : 'Chỉnh sửa'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDeleteUser(u.id, u.name)}
+                  disabled={deletingUserId === u.id}
+                  className="rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-slate-300"
+                >
+                  {deletingUserId === u.id ? 'Đang xoá...' : 'Xoá'}
+                </button>
+                <button onClick={() => setEditingUser(editingUser === u.id ? null : u.id)} className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+                  {editingUser === u.id ? 'Đóng' : 'Chỉnh sửa'}
+                </button>
+              </div>
             </div>
 
             {editingUser === u.id && (
@@ -129,6 +158,17 @@ export default function AdminUsers() {
           </div>
         ))}
       </div>
+
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-50 rounded-2xl px-6 py-4 shadow-lg text-sm font-semibold transition-all ${
+          toast.type === 'success' 
+            ? 'bg-green-50 border border-green-200 text-green-700' 
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {toast.message}
+        </div>
+      )}
     </main>
   );
 }

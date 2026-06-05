@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   listUsers,
   updateUser,
+  deleteUser,
   listCourses,
   createCourse,
   updateCourse,
@@ -33,6 +34,16 @@ router.put('/users/:id', async (req, res) => {
     const user = await updateUser(req.params.id, req.body);
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const result = await deleteUser(req.params.id);
+    if (!result) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'Đã xoá người dùng thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
