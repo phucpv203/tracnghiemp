@@ -17,6 +17,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
+  'https://phucpv203.github.io',  // Set trên GitHub Pages
   process.env.FRONTEND_URL,  // Set trên Render, vd: https://phucpv203.github.io
 ].filter(Boolean);
 
