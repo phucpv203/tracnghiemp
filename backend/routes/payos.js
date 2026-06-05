@@ -45,12 +45,13 @@ router.post('/create-payment', requireAuth, async (req, res) => {
 
     // Gọi PayOS tạo link thanh toán
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    // App dùng HashRouter nên path phải có /#/ để React Router nhận diện
     const result = await createPaymentLink({
       orderCode,
       amount,
       description: `Nạp ${points} điểm`,
-      returnUrl: `${baseUrl}/topup?status=success&orderCode=${orderCode}&points=${points}`,
-      cancelUrl: `${baseUrl}/topup?status=cancelled&orderCode=${orderCode}`,
+      returnUrl: `${baseUrl}/#/topup`,
+      cancelUrl: `${baseUrl}/#/topup`,
       buyerName: user.name,
       buyerEmail: user.email,
     });
