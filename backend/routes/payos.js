@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { query } from '../services/db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { createPaymentLink, getPaymentInfo } from '../services/payosService.js';
+import { createPaymentLink, getPaymentInfo, verifyWebhookSignature } from '../services/payosService.js';
 
 const router = Router();
 
@@ -131,24 +131,66 @@ router.get('/check-payment/:orderCode', requireAuth, async (req, res) => {
 });
 
 /**
- * POST /payos/webhook
  * Webhook từ PayOS thông báo kết quả thanh toán
+ * 
+ * Cấu trúc webhook từ PayOS:
+ * {
+ *   code: "00",                    // "00" = thành công
+ *   desc: "Successful",
+ *   data: {
+ *     orderCode: 123,
+ *     amount: 5000,
+ *     description: "...",
+ *     reference: "...",
+ *     paymentLinkId: "...",
+ *     code: "00",
+ *     desc: "Successful",
+ *     counterAccountBankId: "...",
+ *     counterAccountBankName: "...",
+ *     counterAccountName: "...",
+ *     counterAccountNumber: "...",
+ *     virtualAccountName: "...",
+ *     virtualAccountNumber: "...",
+ *     accountNumber: "...",
+ *     transactionDateTime: "...",
+ *     currency: "VND"
+ *   },
+ *   signature: "hmac_sha256_signature"
+ * }
+ * 
  * Lưu ý: Cần cấu hình Webhook URL trên PayOS Dashboard
+ * định dạng: https://domain.com/payos/webhook
+ * method: POST
  */
 router.post('/webhook', async (req, res) => {
   try {
     const body = req.body;
-    console.log('[PayOS] Webhook received:', body);
+    console.log('[PayOS] Webhook received (raw):', JSON.stringify(body).substring(0, 500));
 
-    // Xác thực webhook (nếu có checksum key)
-    // Có thể bỏ qua để test, nhưng production nên verify
+    // PayOS gửi webhook với cấu trúc: { code, desc, data: { ... }, signature }
+    // Hoặc đôi khi gửi thẳng dữ liệu ở root (tuỳ phiên bản)
+    const webhookCode = body.code;
+    const webhookData = body.data || body; // fallback nếu data gửi trực tiếp
+    const signature = body.signature;
+    const orderCode = webhookData.orderCode || body.orderCode;
+    const payCode = webhookData.code || webhookCode;
 
-    const orderCode = body.orderCode;
-    const status = body.status; // 'PAID' | 'CANCELLED'
-
-    if (!orderCode || !status) {
-      return res.status(400).json({ message: 'Invalid webhook data' });
+    if (!orderCode) {
+      console.error('[PayOS] Missing orderCode in webhook');
+      return res.status(400).json({ message: 'Missing orderCode' });
     }
+
+    // Xác thực signature nếu có
+    if (signature) {
+      if (!verifyWebhookSignature(webhookData, signature)) {
+        console.error('[PayOS] Invalid webhook signature');
+        return res.status(401).json({ message: 'Invalid signature' });
+      }
+    }
+
+    // Xác định trạng thái thanh toán
+    // PayOS code "00" = thành công, các code khác = thất bại
+    const isPaid = payCode === '00';
 
     const paymentRes = await query(
       'SELECT * FROM payment_history WHERE order_code = $1',
@@ -156,34 +198,54 @@ router.post('/webhook', async (req, res) => {
     );
 
     if (!paymentRes.rows.length) {
-      return res.status(404).json({ message: 'Order not found' });
+      console.warn(`[PayOS] Order ${orderCode} not found in DB`);
+      // Vẫn trả về success để PayOS không gửi lại webhook
+      return res.json({ success: true });
     }
 
     const payment = paymentRes.rows[0];
 
-    if (status === 'PAID' && payment.status === 'pending') {
+    // Chỉ xử lý nếu đơn hàng đang pending (tránh xử lý trùng)
+    if (payment.status !== 'pending') {
+      console.log(`[PayOS] Order ${orderCode} already processed (status=${payment.status}), skipping`);
+      return res.json({ success: true });
+    }
+
+    if (isPaid) {
       // Cộng điểm cho user
+      const dbPoints = Number(payment.points);
       await query(
         'UPDATE payment_history SET status = $1, paid_at = NOW(), updated_at = NOW() WHERE order_code = $2',
         ['paid', orderCode]
       );
       await query(
         'UPDATE users SET points = points + $1, updated_at = NOW() WHERE id = $2',
-        [payment.points, payment.user_id]
+        [dbPoints, payment.user_id]
       );
-      console.log(`[PayOS] User ${payment.user_id} topped up ${payment.points} points (order ${orderCode})`);
-    } else if (status === 'CANCELLED' && payment.status === 'pending') {
+      console.log(`[PayOS] ✅ User ${payment.user_id} topped up ${dbPoints} points (order ${orderCode}, ref: ${webhookData.reference || 'N/A'})`);
+    } else {
+      // Thanh toán thất bại hoặc bị huỷ
       await query(
         'UPDATE payment_history SET status = $1, updated_at = NOW() WHERE order_code = $2',
         ['cancelled', orderCode]
       );
+      console.log(`[PayOS] ❌ Payment failed/cancelled for order ${orderCode} (code: ${payCode})`);
     }
 
     res.json({ success: true });
   } catch (error) {
     console.error('[PayOS] Webhook error:', error);
-    res.status(500).json({ message: error.message });
+    // Luôn trả về 200 để PayOS không gửi lại webhook lỗi
+    res.json({ success: true, note: 'Error logged' });
   }
+});
+
+/**
+ * GET /payos/webhook - Trả về 200 để PayOS xác thực URL webhook
+ * Một số hệ thống kiểm tra webhook URL bằng GET request
+ */
+router.get('/webhook', (req, res) => {
+  res.json({ success: true, message: 'Webhook endpoint is active' });
 });
 
 export default router;
