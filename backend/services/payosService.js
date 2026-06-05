@@ -6,7 +6,7 @@
  *   PAYOS_API_KEY
  *   PAYOS_CHECKSUM_KEY
  */
-import PayOS from '@payos/node';
+import { PayOS } from '@payos/node';
 
 let payosInstance = null;
 
