@@ -5,6 +5,6 @@ import { AuthContext } from '../App';
 export default function AdminProtectedRoute({ children }) {
   const { user } = useContext(AuthContext);
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  if (user.role !== 'admin') return <Navigate to="/trang-chu" replace />;
   return children;
 }

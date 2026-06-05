@@ -332,8 +332,8 @@ export default function StudyPage() {
           <h1 className="mt-2 text-3xl font-semibold text-slate-900">{course.title}</h1>
           <p className="mt-2 text-sm text-slate-600">Ôn tập lại nội dung quan trọng và xem lại cấu trúc đề.</p>
         </div>
-        <button onClick={() => navigate('/dashboard')} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
-          Quay lại Dashboard
+        <button onClick={() => navigate('/trang-chu')} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
+          Quay lại Trang chủ
         </button>
       </div>
 

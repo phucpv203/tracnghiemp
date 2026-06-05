@@ -5,7 +5,7 @@
  * sẽ redirect về trang login.
  * 
  * Sử dụng cho các route cần đăng nhập như:
- * - /dashboard
+ * - /trang-chu
  * - /study/:courseId
  * - /exam/:courseId
  */

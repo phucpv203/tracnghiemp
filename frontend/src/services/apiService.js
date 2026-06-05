@@ -73,6 +73,7 @@ export const apiService = {
   login: (payload) => request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
   register: (payload) => request('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
   me: () => request('/auth/me'),
+  logout: () => request('/auth/logout', { method: 'POST' }),
   replaceDevice: (payload) => request('/auth/replace-device', { method: 'POST', body: JSON.stringify(payload) }),
 
   // ===== Courses =====

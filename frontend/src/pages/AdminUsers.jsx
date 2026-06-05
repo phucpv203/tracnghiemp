@@ -52,10 +52,10 @@ export default function AdminUsers() {
         <h1 className="text-2xl font-semibold">Quản lý người dùng</h1>
         <div className="flex items-center gap-3">
           <Link
-            to="/dashboard"
+            to="/trang-chu"
             className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
           >
-            ← Quay lại User Dashboard
+            ← Quay lại Trang chủ
           </Link>
           <button
             onClick={onLogout}

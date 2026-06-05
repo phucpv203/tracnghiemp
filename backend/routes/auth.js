@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { registerUser, loginUser, loginAndReplaceDevice, getUserById } from '../services/authService.js';
+import { deleteDeviceByUserId } from '../services/deviceService.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -44,6 +45,19 @@ router.post('/replace-device', async (req, res) => {
     res.json(result);
   } catch (error) {
     res.status(401).json({ message: error.message });
+  }
+});
+
+/**
+ * POST /auth/logout
+ * Xoá device record và token (logout)
+ */
+router.post('/logout', requireAuth, async (req, res) => {
+  try {
+    await deleteDeviceByUserId(req.user.id);
+    res.json({ message: 'Đăng xuất thành công.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

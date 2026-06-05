@@ -324,8 +324,8 @@ export default function ExamPage() {
 
       <div className="space-y-6">
         <div className="flex justify-end">
-          <button onClick={() => navigate('/dashboard')} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
-            Quay lại Dashboard
+          <button onClick={() => navigate('/trang-chu')} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
+            Quay lại Trang chủ
           </button>
         </div>
           <div id="result-panel" className="hidden rounded-3xl border border-amber-200 bg-amber-50 p-5 text-slate-900 shadow-sm" role="status">

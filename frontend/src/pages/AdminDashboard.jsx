@@ -10,15 +10,15 @@ export default function AdminDashboard() {
       <div className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+            <h1 className="text-2xl font-semibold">Admin Trang chủ</h1>
             <p className="mt-2 text-sm text-slate-600">Quản lý người dùng và nội dung.</p>
           </div>
           <div className="flex items-center gap-3">
             <Link
-              to="/dashboard"
+              to="/trang-chu"
               className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
             >
-              ← Quay lại User Dashboard
+              ← Quay lại Trang chủ
             </Link>
             <button
               onClick={onLogout}

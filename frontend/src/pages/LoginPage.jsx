@@ -108,26 +108,8 @@ export default function LoginPage() {
               <p className="text-sm font-semibold text-amber-800 mb-1">⚠️ Xung đột thiết bị</p>
               <p className="text-sm text-amber-700">
                 Tài khoản đang được dùng trên <strong>"{deviceConflict.existingDevice.deviceName}"</strong>.
-                Bạn có muốn xóa thiết bị đó để đăng nhập trên máy này không?
+                Bạn phải đăng xuất thiết bị đó trước khi đăng nhập trên thiết bị này.
               </p>
-              <div className="mt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleReplaceDevice}
-                  disabled={replacing}
-                  className="flex-1 rounded-2xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:bg-slate-300"
-                >
-                  {replacing ? 'Đang xử lý...' : 'Xác nhận & Đăng nhập'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelReplace}
-                  disabled={replacing}
-                  className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  Hủy
-                </button>
-              </div>
             </div>
           )}
 

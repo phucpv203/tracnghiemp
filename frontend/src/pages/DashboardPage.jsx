@@ -1,5 +1,5 @@
 /**
- * DashboardPage - Trang dashboard hiển thị danh sách môn học
+ * DashboardPage - Trang chủ hiển thị danh sách môn học
  * 
  * Chức năng chính:
  * - Hiển thị thông tin user đã đăng nhập
@@ -116,7 +116,7 @@ export default function DashboardPage() {
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Dashboard môn học</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Trang chủ môn học</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-900">Xin chào, {user?.name || user?.email}</h1>
           <p className="mt-3 max-w-2xl text-sm text-slate-600">Chọn môn học để ôn tập hoặc thi thử.</p>
           {user?.role === 'admin' && (

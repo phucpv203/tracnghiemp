@@ -59,9 +59,9 @@ export default function TopUpPage() {
             });
             setTimeout(() => {
               setToast(null);
-              // Xoá params PayOS khỏi URL trước khi chuyển về dashboard
-              window.history.replaceState({}, '', window.location.origin + window.location.pathname + '#/dashboard');
-              navigate('/dashboard', { replace: true });
+              // Xoá params PayOS khỏi URL trước khi chuyển về trang chủ
+              window.history.replaceState({}, '', window.location.origin + window.location.pathname + '#/trang-chu');
+              navigate('/trang-chu', { replace: true });
             }, 2000);
           } else {
             setToast({ message: 'Giao dịch đang được xử lý. Vui lòng kiểm tra lại sau.', type: 'info' });
@@ -109,10 +109,10 @@ export default function TopUpPage() {
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/trang-chu')}
             className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
           >
-            ← Quay lại Dashboard
+            ← Quay lại Trang chủ
           </button>
           <button
             onClick={onLogout}

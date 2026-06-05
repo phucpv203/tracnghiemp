@@ -99,10 +99,15 @@ function App() {
     authService.saveUser(userData);
     if (token) authService.saveToken(token);
     setUser(userData);
-    navigate(userData.role === 'admin' ? '/admin' : '/dashboard');
+    navigate(userData.role === 'admin' ? '/admin' : '/trang-chu');
   };
 
-  const onLogout = () => {
+  const onLogout = async () => {
+    try {
+      await apiService.logout();
+    } catch (_) {
+      // Bỏ qua lỗi nếu API không khả dụng (vẫn logout local)
+    }
     authService.clearUser();
     setUser(null);
     navigate('/login');
@@ -120,10 +125,10 @@ function App() {
     <AuthContext.Provider value={{ user, onLogin, onLogout }}>
       <div className="min-h-screen bg-slate-50 text-slate-900">
         <Routes>
-          <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
-          <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
+          <Route path="/login" element={user ? <Navigate to="/trang-chu" replace /> : <LoginPage />} />
+          <Route path="/register" element={user ? <Navigate to="/trang-chu" replace /> : <RegisterPage />} />
           <Route
-            path="/dashboard"
+            path="/trang-chu"
             element={
               <ProtectedRoute>
                 <DashboardPage />
@@ -178,7 +183,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
+          <Route path="*" element={<Navigate to={user ? '/trang-chu' : '/login'} replace />} />
         </Routes>
       </div>
     </AuthContext.Provider>
