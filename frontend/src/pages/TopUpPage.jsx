@@ -59,6 +59,8 @@ export default function TopUpPage() {
             });
             setTimeout(() => {
               setToast(null);
+              // Xoá params PayOS khỏi URL trước khi chuyển về dashboard
+              window.history.replaceState({}, '', window.location.origin + window.location.pathname + '#/dashboard');
               navigate('/dashboard', { replace: true });
             }, 2000);
           } else {
@@ -102,7 +104,7 @@ export default function TopUpPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Nạp thêm điểm</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-900">Xin chào, {user?.name || user?.email}</h1>
           <p className="mt-3 max-w-2xl text-sm text-slate-600">
-            Chọn gói điểm để nạp vào tài khoản. Thanh toán qua <strong>PayOS</strong> (chuyển khoản ngân hàng, quét QR, thẻ tín dụng).
+            Chọn gói điểm để nạp vào tài khoản. <strong>NẾU GẶP VẤN ĐỀ KHI NẠP ĐIỂM LIÊN HỆ ZALO: 0966453217</strong> 
           </p>
         </div>
         <div className="flex items-center gap-4">
