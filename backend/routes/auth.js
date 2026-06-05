@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerUser, loginUser, getUserById } from '../services/authService.js';
+import { registerUser, loginUser, loginAndReplaceDevice, getUserById } from '../services/authService.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -16,8 +16,31 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const result = await loginUser({ email, password });
+    const { email, password, deviceId, deviceName } = req.body;
+    const result = await loginUser({ email, password, deviceId, deviceName });
+    res.json(result);
+  } catch (error) {
+    if (error.code === 'DEVICE_CONFLICT') {
+      // Trả về 409 kèm thông tin thiết bị cũ
+      return res.status(409).json({
+        message: error.message,
+        code: 'DEVICE_CONFLICT',
+        existingDevice: error.existingDevice,
+      });
+    }
+    res.status(401).json({ message: error.message });
+  }
+});
+
+/**
+ * POST /auth/replace-device
+ * Đăng nhập và thay thế thiết bị cũ (đá thiết bị cũ ra)
+ * Body: { email, password, deviceId, deviceName }
+ */
+router.post('/replace-device', async (req, res) => {
+  try {
+    const { email, password, deviceId, deviceName } = req.body;
+    const result = await loginAndReplaceDevice({ email, password, deviceId, deviceName });
     res.json(result);
   } catch (error) {
     res.status(401).json({ message: error.message });
@@ -27,10 +50,6 @@ router.post('/login', async (req, res) => {
 /**
  * GET /auth/me
  * Trả về thông tin user hiện tại (dựa trên token).
- * - Nếu token hợp lệ + version khớp → 200 + user
- * - Nếu token sai/hết hạn/version không khớp → 401
- *
- * Dùng để FE verify token khi reload trang.
  */
 router.get('/me', requireAuth, async (req, res) => {
   try {

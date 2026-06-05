@@ -1,14 +1,15 @@
 /**
- * Middleware xác thực JWT
+ * Middleware xác thực JWT + Thiết bị
  *
  * - Verify JWT signature
- * - Check token_version trong DB có khớp với version trong token không
- *   (nếu cột token_version chưa tồn tại → fallback version=0 để tương thích ngược)
- * - Nếu không khớp → 401 (user đã đăng nhập ở nơi khác)
- * - Nếu khớp → gắn req.user = { id, email, role, version } để route dùng
+ * - Kiểm tra device_id trong header X-Device-Id có khớp với device trong DB không
+ *   (nếu bảng user_devices chưa tồn tại → bỏ qua kiểm tra device)
+ * - Nếu không khớp → 401 SESSION_REPLACED (user đã đăng nhập ở thiết bị khác)
+ * - Nếu khớp → gắn req.user = { id, email, role } để route dùng
  */
 import jwt from 'jsonwebtoken';
 import { query } from '../services/db.js';
+import { getDeviceByUserId } from '../services/deviceService.js';
 
 const SECRET = process.env.JWT_SECRET;
 if (!SECRET) {
@@ -18,22 +19,21 @@ if (SECRET.length < 32) {
   throw new Error('JWT_SECRET quá ngắn, cần ≥ 32 ký tự.');
 }
 
-// Cache trạng thái cột token_version (true = có, false = chưa)
-let HAS_TOKEN_VERSION = null;
-async function checkTokenVersionColumn() {
-  if (HAS_TOKEN_VERSION !== null) return HAS_TOKEN_VERSION;
+// Cache trạng thái bảng user_devices
+let HAS_DEVICES_TABLE = null;
+async function checkDevicesTable() {
+  if (HAS_DEVICES_TABLE !== null) return HAS_DEVICES_TABLE;
   try {
-    await query('SELECT token_version FROM users LIMIT 1');
-    HAS_TOKEN_VERSION = true;
+    await query('SELECT 1 FROM user_devices LIMIT 1');
+    HAS_DEVICES_TABLE = true;
   } catch (e) {
-    if (/column .*token_version.* does not exist/i.test(e.message)) {
-      HAS_TOKEN_VERSION = false;
-      console.warn('[auth] ⚠️  Cột token_version chưa tồn tại. Tính năng "1 tài khoản 1 thiết bị" sẽ tạm thời bị tắt. Hãy chạy file backend/db/migration-token-version.sql trong Supabase SQL Editor.');
+    if (/relation .*user_devices.* does not exist/i.test(e.message)) {
+      HAS_DEVICES_TABLE = false;
     } else {
       throw e;
     }
   }
-  return HAS_TOKEN_VERSION;
+  return HAS_DEVICES_TABLE;
 }
 
 /**
@@ -54,28 +54,42 @@ export async function requireAuth(req, res, next) {
       return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn.', code: 'INVALID_TOKEN' });
     }
 
-    const hasVersion = await checkTokenVersionColumn();
-    const sql = hasVersion
-      ? 'SELECT id, email, role, token_version FROM users WHERE id = $1'
-      : 'SELECT id, email, role, 0 AS token_version FROM users WHERE id = $1';
-    const result = await query(sql, [payload.sub]);
+    // Kiểm tra user có tồn tại trong DB không
+    const result = await query('SELECT id, email, role FROM users WHERE id = $1', [payload.sub]);
     if (!result.rows.length) {
       return res.status(401).json({ message: 'Tài khoản không tồn tại.', code: 'USER_NOT_FOUND' });
     }
 
     const user = result.rows[0];
-    if (hasVersion && Number(user.token_version) !== Number(payload.v)) {
-      return res.status(401).json({
-        message: 'Phiên đăng nhập đã hết hạn. Bạn đang đăng nhập ở nơi khác.',
-        code: 'SESSION_REPLACED',
-      });
+
+    // Kiểm tra device (nếu bảng user_devices tồn tại)
+    const hasDevices = await checkDevicesTable();
+    if (hasDevices) {
+      const deviceId = req.headers['x-device-id'];
+      const registeredDevice = await getDeviceByUserId(user.id);
+
+      if (registeredDevice) {
+        // Nếu user có device trong DB mà request không gửi device_id hoặc gửi sai
+        if (!deviceId) {
+          return res.status(401).json({
+            message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+            code: 'SESSION_REPLACED',
+          });
+        }
+        if (registeredDevice.device_id !== deviceId) {
+          return res.status(401).json({
+            message: 'Tài khoản này đã được đăng nhập trên thiết bị khác. Vui lòng đăng nhập lại.',
+            code: 'SESSION_REPLACED',
+          });
+        }
+      }
+      // Nếu user chưa có device trong DB (trường hợp user cũ), vẫn cho phép
     }
 
     req.user = {
       id: Number(user.id),
       email: user.email,
       role: user.role,
-      version: hasVersion ? Number(user.token_version) : 0,
     };
     next();
   } catch (error) {

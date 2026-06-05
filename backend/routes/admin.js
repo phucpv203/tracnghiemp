@@ -5,6 +5,7 @@ import {
   listCourses,
   createCourse,
   updateCourse,
+  deleteCourse,
   addQuestion,
   updateQuestion,
   updateUserProgress,
@@ -71,6 +72,16 @@ router.put('/courses/:id', async (req, res) => {
     const course = await updateCourse(req.params.id, req.body);
     if (!course) return res.status(404).json({ message: 'Course not found' });
     res.json({ course });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.delete('/courses/:id', async (req, res) => {
+  try {
+    const result = await deleteCourse(req.params.id);
+    if (!result) return res.status(404).json({ message: 'Course not found' });
+    res.json({ message: 'Đã xoá môn học thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

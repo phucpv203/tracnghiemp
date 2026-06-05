@@ -122,6 +122,24 @@ export async function updateCourse(id, data) {
   return result.rows[0];
 }
 
+export async function deleteCourse(id) {
+  const courseId = Number(id);
+
+  // Kiểm tra course tồn tại
+  const existing = await query('SELECT id, title FROM courses WHERE id = $1', [courseId]);
+  if (!existing.rows.length) return null;
+
+  // Xoá các bản ghi liên quan (answers → questions → exams → user_progress → course)
+  await query('DELETE FROM answers WHERE question_id IN (SELECT id FROM questions WHERE course_id = $1)', [courseId]);
+  await query('DELETE FROM questions WHERE course_id = $1', [courseId]);
+  await query('DELETE FROM exams WHERE course_id = $1', [courseId]);
+  await query('DELETE FROM user_progress WHERE course_id = $1', [courseId]);
+  await query('DELETE FROM course_prerequisites WHERE course_id = $1 OR prerequisite_course_id = $1', [courseId]);
+  await query('DELETE FROM courses WHERE id = $1', [courseId]);
+
+  return { id: courseId, deleted: true };
+}
+
 function normalizeContent(value, explanation) {
   if (typeof value === 'string') {
     let output = value;

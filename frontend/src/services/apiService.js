@@ -2,9 +2,11 @@
  * apiService - Dịch vụ gọi API đến backend
  *
  * Tự động gắn Authorization: Bearer <token> từ localStorage.
+ * Tự động gắn X-Device-Id header từ deviceService.
  * Khi backend trả 401 (token sai/hết hạn/phiên bị thay thế) → thông báo auth.
  */
 import { authService } from './authService';
+import { deviceService } from './deviceService';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -22,6 +24,13 @@ async function request(path, options = {}) {
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  }
+
+  // Gắn Device_ID vào header của mọi request
+  try {
+    headers['X-Device-Id'] = deviceService.getDeviceId();
+  } catch (_) {
+    // browser-only, ignore
   }
 
   const method = options.method || 'GET';
@@ -64,6 +73,7 @@ export const apiService = {
   login: (payload) => request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
   register: (payload) => request('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
   me: () => request('/auth/me'),
+  replaceDevice: (payload) => request('/auth/replace-device', { method: 'POST', body: JSON.stringify(payload) }),
 
   // ===== Courses =====
   getCourses: () => request('/courses'),
@@ -78,6 +88,10 @@ export const apiService = {
   // ===== Top-up =====
   topUp: (points) => request('/progress/topup', { method: 'POST', body: JSON.stringify({ points }) }),
 
+  // ===== PayOS =====
+  createPayment: (points) => request('/payos/create-payment', { method: 'POST', body: JSON.stringify({ points }) }),
+  checkPayment: (orderCode) => request(`/payos/check-payment/${orderCode}`),
+
   // ===== Exams =====
   getExam: (courseId) => request(`/exams/${courseId}`),
   submitExam: (courseId, answers) =>
@@ -89,6 +103,7 @@ export const apiService = {
   getAdminCourses: () => request('/admin/courses'),
   createCourse: (data) => request('/admin/courses', { method: 'POST', body: JSON.stringify(data) }),
   updateCourse: (id, data) => request(`/admin/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCourse: (id) => request(`/admin/courses/${id}`, { method: 'DELETE' }),
   createQuestion: (data) => request('/admin/questions', { method: 'POST', body: JSON.stringify(data) }),
   updateQuestion: (id, data) => request(`/admin/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   importQuestions: (courseId, questions) =>

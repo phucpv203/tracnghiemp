@@ -1,12 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
+import { Link } from 'react-router-dom';
+import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
 
 export default function AdminCourses() {
+  const { onLogout } = useContext(AuthContext);
   const [courses, setCourses] = useState([]);
   const [newCourse, setNewCourse] = useState({ title: '', requiredScore: 0 });
   const [uploadCourseId, setUploadCourseId] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [importMessage, setImportMessage] = useState('');
+  const [deletingCourseId, setDeletingCourseId] = useState(null);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     apiService.getAdminCourses().then((res) => setCourses(res.courses || []));
@@ -44,9 +49,43 @@ export default function AdminCourses() {
     }
   };
 
+  const handleDeleteCourse = async (courseId, courseTitle) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xoá môn học "${courseTitle}"? Hành động này không thể hoàn tác và sẽ xoá tất cả câu hỏi, đề thi liên quan.`)) {
+      return;
+    }
+    setDeletingCourseId(courseId);
+    try {
+      await apiService.deleteCourse(courseId);
+      setCourses((prev) => prev.filter((c) => c.id !== courseId));
+      setToast({ message: `Đã xoá môn học "${courseTitle}"`, type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      setToast({ message: err.message || 'Lỗi khi xoá môn học.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setDeletingCourseId(null);
+    }
+  };
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="text-2xl font-semibold">Quản lý môn học & câu hỏi</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Quản lý môn học & câu hỏi</h1>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard"
+            className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+          >
+            ← Quay lại User Dashboard
+          </Link>
+          <button
+            onClick={onLogout}
+            className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+          >
+            Đăng xuất
+          </button>
+        </div>
+      </div>
 
       <div className="mt-6 space-y-4">
         <div className="rounded-xl bg-white p-4 shadow-sm">
@@ -88,7 +127,16 @@ export default function AdminCourses() {
 
         {courses.map((c) => (
           <div key={c.id} className="rounded-xl bg-white p-4 shadow-sm">
-            <h3 className="font-semibold">{c.title}</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">{c.title}</h3>
+              <button
+                onClick={() => handleDeleteCourse(c.id, c.title)}
+                disabled={deletingCourseId === c.id}
+                className="rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-slate-300"
+              >
+                {deletingCourseId === c.id ? 'Đang xoá...' : 'Xoá'}
+              </button>
+            </div>
             <input id={`title-${c.id}`} defaultValue={c.title} className="mt-2 w-full px-3 py-2" />
             <input
               id={`required-${c.id}`}
@@ -103,6 +151,17 @@ export default function AdminCourses() {
           </div>
         ))}
       </div>
+
+      {/* Toast notification */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-50 rounded-2xl px-6 py-4 shadow-lg text-sm font-semibold transition-all ${
+          toast.type === 'success' 
+            ? 'bg-green-50 border border-green-200 text-green-700' 
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {toast.message}
+        </div>
+      )}
     </main>
   );
 }

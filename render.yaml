@@ -17,3 +17,10 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      # PayOS Configuration - Đăng ký tại https://payos.vn
+      - key: PAYOS_CLIENT_ID
+        sync: false
+      - key: PAYOS_API_KEY
+        sync: false
+      - key: PAYOS_CHECKSUM_KEY
+        sync: false

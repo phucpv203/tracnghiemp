@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
+import { Link } from 'react-router-dom';
+import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
 
 export default function AdminUsers() {
+  const { onLogout } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [passwords, setPasswords] = useState({});
@@ -45,7 +48,23 @@ export default function AdminUsers() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="text-2xl font-semibold">Quản lý người dùng</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Quản lý người dùng</h1>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard"
+            className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+          >
+            ← Quay lại User Dashboard
+          </Link>
+          <button
+            onClick={onLogout}
+            className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+          >
+            Đăng xuất
+          </button>
+        </div>
+      </div>
       <div className="mt-6 space-y-6">
         {users.map((u) => (
           <div key={u.id} className="rounded-3xl bg-white p-6 shadow-sm">
