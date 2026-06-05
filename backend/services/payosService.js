@@ -1,37 +1,28 @@
 /**
- * payosService - Tích hợp cổng thanh toán PayOS
+ * payosService - Tích hợp cổng thanh toán PayOS (dùng SDK chính thức)
  *
- * API Doc: https://payos.vn/docs/api/
  * Cần set biến môi trường:
  *   PAYOS_CLIENT_ID
  *   PAYOS_API_KEY
  *   PAYOS_CHECKSUM_KEY
  */
-import crypto from 'crypto';
+import PayOS from '@payos/node';
 
-const PAYOS_API_BASE = 'https://api-merchant.payos.vn/v2';
+let payosInstance = null;
 
-function getClientId() {
-  return process.env.PAYOS_CLIENT_ID;
-}
+function getPayOS() {
+  if (!payosInstance) {
+    const clientId = process.env.PAYOS_CLIENT_ID;
+    const apiKey = process.env.PAYOS_API_KEY;
+    const checksumKey = process.env.PAYOS_CHECKSUM_KEY;
 
-function getApiKey() {
-  return process.env.PAYOS_API_KEY;
-}
+    if (!clientId || !apiKey || !checksumKey) {
+      throw new Error('PAYOS_CLIENT_ID, PAYOS_API_KEY và PAYOS_CHECKSUM_KEY phải được cấu hình.');
+    }
 
-function getChecksumKey() {
-  return process.env.PAYOS_CHECKSUM_KEY;
-}
-
-/**
- * Tạo chữ ký HMAC-SHA256 cho request
- */
-function createSignature(data) {
-  const checksumKey = getChecksumKey();
-  if (!checksumKey) return '';
-  const sortedKeys = Object.keys(data).sort();
-  const signStr = sortedKeys.map(key => `${key}=${data[key]}`).join('&');
-  return crypto.createHmac('sha256', checksumKey).update(signStr).digest('hex');
+    payosInstance = new PayOS(clientId, apiKey, checksumKey);
+  }
+  return payosInstance;
 }
 
 /**
@@ -46,15 +37,11 @@ function createSignature(data) {
  * @param {string} params.buyerName - Tên người mua (tuỳ chọn)
  * @param {string} params.buyerEmail - Email (tuỳ chọn)
  * @param {string} params.buyerPhone - SĐT (tuỳ chọn)
+ * @param {string} params.buyerAddress - Địa chỉ (tuỳ chọn)
  * @returns {Promise<{ checkoutUrl: string, paymentLinkId: string }>}
  */
 export async function createPaymentLink(params) {
-  const clientId = getClientId();
-  const apiKey = getApiKey();
-
-  if (!clientId || !apiKey) {
-    throw new Error('PAYOS_CLIENT_ID hoặc PAYOS_API_KEY chưa được cấu hình.');
-  }
+  const payos = getPayOS();
 
   const body = {
     orderCode: params.orderCode,
@@ -69,80 +56,42 @@ export async function createPaymentLink(params) {
     expiredAt: Math.floor(Date.now() / 1000) + 1800, // Hết hạn sau 30 phút
   };
 
-  // Thêm signature nếu có checksum key
-  const checksumKey = getChecksumKey();
-  if (checksumKey) {
-    body.signature = createSignature(body);
-  }
-
   console.log('[PayOS] Creating payment link:', { orderCode: params.orderCode, amount: params.amount });
 
-  const response = await fetch(`${PAYOS_API_BASE}/payment-requests`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-client-id': clientId,
-      'x-api-key': apiKey,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error('[PayOS] Create payment link failed:', response.status, errorBody);
-    throw new Error(`PayOS error: ${response.status} - ${errorBody}`);
-  }
-
-  const data = await response.json();
-  console.log('[PayOS] Payment link created:', data);
-
-  if (data.code !== '00') {
-    throw new Error(`PayOS error: ${data.desc || 'Unknown error'}`);
-  }
+  // Dùng SDK: payos.paymentRequests.create(data) thay vì gọi API thủ công
+  const response = await payos.paymentRequests.create(body);
 
   return {
-    checkoutUrl: data.data.checkoutUrl,
-    paymentLinkId: data.data.id,
-    orderCode: data.data.orderCode,
+    checkoutUrl: response.checkoutUrl,
+    paymentLinkId: response.id,
+    orderCode: response.orderCode,
   };
 }
 
 /**
- * Kiểm tra trạng thái thanh toán
+ * Kiểm tra trạng thái thanh toán từ paymentLinkId
  */
 export async function getPaymentInfo(paymentLinkId) {
-  const clientId = getClientId();
-  const apiKey = getApiKey();
-
-  if (!clientId || !apiKey) {
-    throw new Error('PAYOS_CLIENT_ID hoặc PAYOS_API_KEY chưa được cấu hình.');
-  }
-
-  const response = await fetch(`${PAYOS_API_BASE}/payment-requests/${paymentLinkId}`, {
-    method: 'GET',
-    headers: {
-      'x-client-id': clientId,
-      'x-api-key': apiKey,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`PayOS getPaymentInfo failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.data;
+  const payos = getPayOS();
+  // Dùng SDK: payos.paymentRequests.get(id)
+  const response = await payos.paymentRequests.get(paymentLinkId);
+  return response;
 }
 
 /**
- * Xác thực webhook signature từ PayOS
+ * Xác thực webhook signature từ PayOS (dùng SDK)
+ * 
+ * @param {Object} webhookBody - Toàn bộ body từ webhook: { code, desc, data, signature }
+ * @returns {boolean}
  */
-export function verifyWebhookSignature(reqBody, signature) {
-  const checksumKey = getChecksumKey();
-  if (!checksumKey) return false;
-
-  const sortedKeys = Object.keys(reqBody).sort();
-  const signStr = sortedKeys.map(key => `${key}=${reqBody[key]}`).join('&');
-  const expected = crypto.createHmac('sha256', checksumKey).update(signStr).digest('hex');
-  return expected === signature;
+export async function verifyWebhookSignature(webhookBody) {
+  try {
+    const payos = getPayOS();
+    // SDK: payos.webhooks.verify(webhookBody) - async, ném lỗi nếu không hợp lệ
+    await payos.webhooks.verify(webhookBody);
+    return true;
+  } catch (error) {
+    console.error('[PayOS] Webhook signature verification failed:', error.message);
+    return false;
+  }
 }

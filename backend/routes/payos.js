@@ -180,9 +180,9 @@ router.post('/webhook', async (req, res) => {
       return res.status(400).json({ message: 'Missing orderCode' });
     }
 
-    // Xác thực signature nếu có
+    // Xác thực signature nếu có (SDK cần toàn bộ body: { code, desc, data, signature })
     if (signature) {
-      if (!verifyWebhookSignature(webhookData, signature)) {
+      if (!(await verifyWebhookSignature(body))) {
         console.error('[PayOS] Invalid webhook signature');
         return res.status(401).json({ message: 'Invalid signature' });
       }
