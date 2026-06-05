@@ -8,7 +8,7 @@
  * 4. Kiểm tra trạng thái thanh toán và cộng điểm
  */
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
 
@@ -18,60 +18,63 @@ const TOPUP_PACKAGES = [
   { points: 300, label: '300 điểm', price: '300,000₫', amount: 300000 },
 ];
 
+/**
+ * Parse query params từ URL (cả trước và sau hash).
+ * Với HashRouter, PayOS đặt params ở root URL (?key=val#/path),
+ * useSearchParams chỉ đọc params sau hash, nên cần parse thủ công.
+ */
+function getPayOSParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    cancel: params.get('cancel'),
+    code: params.get('code'),
+    orderCode: params.get('orderCode'),
+    status: params.get('status'),
+  };
+}
+
 export default function TopUpPage() {
   const { user, onLogout } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
   // Xử lý khi được redirect về từ PayOS
   useEffect(() => {
-    // PayOS trả về params ở dạng:
-    //   cancel=false, code=00, id=..., orderCode=..., status=PAID
-    // Hoặc dạng custom cũ: status=success/cancelled, orderCode=..., points=...
-    const cancel = searchParams.get('cancel');
-    const payStatus = searchParams.get('status');
-    const orderCode = searchParams.get('orderCode');
-    const code = searchParams.get('code');
-    const points = searchParams.get('points');
+    // PayOS trả về params ở root URL (trước hash), không phải trong hash route
+    // VD: https://domain.com/?cancel=false&code=00&orderCode=123&status=PAID#/topup
+    const { cancel, code, orderCode } = getPayOSParams();
 
-    // PayOS redirect: cancel=false & code=00 & status=PAID → thành công
-    // cancel=false & code != 00 → thất bại
-    // cancel=true → huỷ
-    if (orderCode) {
-      if (cancel === 'false' && code === '00') {
-        // Thanh toán thành công: gọi backend kiểm tra + toast
-        (async () => {
-          try {
-            const result = await apiService.checkPayment(orderCode);
-            if (result.status === 'paid') {
-              setToast({
-                message: `✅ Nạp ${result.points} điểm thành công qua PayOS!`,
-                type: 'success',
-              });
-              setTimeout(() => {
-                setToast(null);
-                navigate('/dashboard', { replace: true });
-              }, 2000);
-            } else {
-              setToast({ message: 'Giao dịch đang được xử lý. Vui lòng kiểm tra lại sau.', type: 'info' });
-              setTimeout(() => setToast(null), 5000);
-            }
-          } catch (err) {
-            setToast({ message: err.message || 'Lỗi kiểm tra giao dịch.', type: 'error' });
-            setTimeout(() => setToast(null), 3000);
+    if (!orderCode) return; // Không có params PayOS → bỏ qua
+
+    if (cancel === 'false' && code === '00') {
+      // Thanh toán thành công: gọi backend kiểm tra
+      (async () => {
+        try {
+          const result = await apiService.checkPayment(orderCode);
+          if (result.status === 'paid') {
+            setToast({
+              message: `✅ Nạp ${result.points} điểm thành công qua PayOS!`,
+              type: 'success',
+            });
+            setTimeout(() => {
+              setToast(null);
+              navigate('/dashboard', { replace: true });
+            }, 2000);
+          } else {
+            setToast({ message: 'Giao dịch đang được xử lý. Vui lòng kiểm tra lại sau.', type: 'info' });
+            setTimeout(() => setToast(null), 5000);
           }
-        })();
-      } else if (cancel === 'true') {
-        setToast({ message: 'Bạn đã huỷ giao dịch thanh toán.', type: 'info' });
-        setTimeout(() => setToast(null), 3000);
-      } else if (payStatus === 'cancelled') {
-        setToast({ message: 'Bạn đã huỷ giao dịch thanh toán.', type: 'info' });
-        setTimeout(() => setToast(null), 3000);
-      }
+        } catch (err) {
+          setToast({ message: err.message || 'Lỗi kiểm tra giao dịch.', type: 'error' });
+          setTimeout(() => setToast(null), 3000);
+        }
+      })();
+    } else if (cancel === 'true') {
+      setToast({ message: 'Bạn đã huỷ giao dịch thanh toán.', type: 'info' });
+      setTimeout(() => setToast(null), 3000);
     }
-  }, [searchParams, navigate]);
+  }, [navigate]);
 
   const handleTopUp = async (pkg) => {
     setLoading(true);
