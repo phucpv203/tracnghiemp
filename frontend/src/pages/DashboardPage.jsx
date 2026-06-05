@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [unlockingCourseId, setUnlockingCourseId] = useState(null); // Môn đang xác nhận mở khóa
   const [unlockingLoading, setUnlockingLoading] = useState(false);
   const [toast, setToast] = useState(null); // {message, type: 'success'|'error'}
+  const [searchTerm, setSearchTerm] = useState('');   // Từ khóa tìm kiếm môn học
 
   // Load data from API
   useEffect(() => {
@@ -72,6 +73,15 @@ export default function DashboardPage() {
       };
     });
   }, [courses, progressMap]);
+
+  // Filter courses based on search term
+  const filteredCourses = useMemo(() => {
+    if (!searchTerm.trim()) return activeCourses;
+    const keyword = searchTerm.trim().toLowerCase();
+    return activeCourses.filter(course =>
+      course.title.toLowerCase().includes(keyword)
+    );
+  }, [activeCourses, searchTerm]);
 
   const handleUnlock = async (courseId) => {
     setUnlockingLoading(true);
@@ -142,13 +152,43 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {activeCourses.length === 0 ? (
+      {/* Thanh tìm kiếm môn học */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <input
+            type="text"
+            placeholder="Tìm kiếm môn học..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100"
+          />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {filteredCourses.length === 0 ? (
         <div className="rounded-3xl bg-white p-8 text-center shadow-sm">
-          <p className="text-slate-600">Chưa có khóa học nào. Vui lòng liên hệ admin để được cấp khóa học.</p>
+          <p className="text-slate-600">
+            {searchTerm.trim()
+              ? `Không tìm thấy môn học "${searchTerm}".`
+              : 'Chưa có khóa học nào. Vui lòng liên hệ admin để được cấp khóa học.'}
+          </p>
         </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-4">
-          {activeCourses.map((course) => (
+          {filteredCourses.map((course) => (
             <article key={course.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4">
               <h2 className="text-xl font-semibold text-slate-900">{course.title}</h2>
               
