@@ -267,6 +267,21 @@ export async function deleteUser(id) {
   return { id: userId, deleted: true };
 }
 
+export async function getUserDevices(userId) {
+  const result = await query(
+    'SELECT id, device_id, device_name, created_at, updated_at FROM user_devices WHERE user_id = $1 ORDER BY created_at DESC',
+    [Number(userId)]
+  );
+  return result.rows;
+}
+
+export async function deleteUserDevice(userId, deviceId) {
+  const existing = await query('SELECT id FROM user_devices WHERE id = $1 AND user_id = $2', [Number(deviceId), Number(userId)]);
+  if (!existing.rows.length) return null;
+  await query('DELETE FROM user_devices WHERE id = $1 AND user_id = $2', [Number(deviceId), Number(userId)]);
+  return { id: Number(deviceId), deleted: true };
+}
+
 export async function updateUserProgress(userId, courseId, data) {
   const values = [Number(userId), Number(courseId), Number(data.score ?? 0), data.status || 'learning', data.lastExamId ?? null];
   const result = await query(

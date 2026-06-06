@@ -114,6 +114,8 @@ export const apiService = {
   updateUserPoints: (id, points) =>
     request(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify({ points }) }),
   deleteUser: (id) => request(`/admin/users/${id}`, { method: 'DELETE' }),
+  getUserDevices: (userId) => request(`/admin/users/${userId}/devices`),
+  deleteUserDevice: (userId, deviceId) => request(`/admin/users/${userId}/devices/${deviceId}`, { method: 'DELETE' }),
   updateUserScore: (userId, courseId, data) =>
     request(`/admin/users/${userId}/progress/${courseId}`, { method: 'PUT', body: JSON.stringify(data) }),
 };

@@ -11,6 +11,9 @@ export default function AdminUsers() {
   const [points, setPoints] = useState({});
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [userDevices, setUserDevices] = useState({});
+  const [expandedDevices, setExpandedDevices] = useState({});
+  const [deletingDeviceId, setDeletingDeviceId] = useState(null);
 
   useEffect(() => {
     apiService.getUsers().then((res) => {
@@ -56,6 +59,44 @@ export default function AdminUsers() {
     await apiService.updateUserPassword(id, newPassword);
     setPasswords((prev) => ({ ...prev, [id]: '' }));
     alert('Mật khẩu người dùng đã được cập nhật.');
+  };
+
+  const toggleDevices = async (userId) => {
+    if (expandedDevices[userId]) {
+      setExpandedDevices((prev) => ({ ...prev, [userId]: false }));
+      return;
+    }
+    setExpandedDevices((prev) => ({ ...prev, [userId]: true }));
+    if (!userDevices[userId]) {
+      try {
+        const res = await apiService.getUserDevices(userId);
+        setUserDevices((prev) => ({ ...prev, [userId]: res.devices || [] }));
+      } catch (err) {
+        setToast({ message: 'Lỗi khi tải danh sách thiết bị.', type: 'error' });
+        setTimeout(() => setToast(null), 3000);
+      }
+    }
+  };
+
+  const handleDeleteDevice = async (userId, deviceId, deviceName) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xoá thiết bị "${deviceName}"? Người dùng sẽ bị đăng xuất khỏi thiết bị này.`)) {
+      return;
+    }
+    setDeletingDeviceId(deviceId);
+    try {
+      await apiService.deleteUserDevice(userId, deviceId);
+      setUserDevices((prev) => ({
+        ...prev,
+        [userId]: (prev[userId] || []).filter((d) => d.id !== deviceId),
+      }));
+      setToast({ message: 'Đã xoá thiết bị thành công.', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    } catch (err) {
+      setToast({ message: err.message || 'Lỗi khi xoá thiết bị.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setDeletingDeviceId(null);
+    }
   };
 
   const updatePoints = async (userId) => {
@@ -154,6 +195,42 @@ export default function AdminUsers() {
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold">Thiết bị đã đăng nhập</p>
+                <button
+                  onClick={() => toggleDevices(u.id)}
+                  className="rounded-2xl bg-slate-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-600"
+                >
+                  {expandedDevices[u.id] ? 'Ẩn' : 'Xem'}
+                </button>
+              </div>
+              {expandedDevices[u.id] && (
+                <div className="mt-3 space-y-2">
+                  {(!userDevices[u.id] || userDevices[u.id].length === 0) && (
+                    <p className="text-sm text-slate-500">Không có thiết bị nào.</p>
+                  )}
+                  {userDevices[u.id]?.map((device) => (
+                    <div key={device.id} className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm">
+                      <div>
+                        <p className="text-sm font-medium">{device.device_name}</p>
+                        <p className="text-xs text-slate-500">
+                          ID: {device.device_id} &middot; Từ: {new Date(device.created_at).toLocaleDateString('vi-VN')}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteDevice(u.id, device.id, device.device_name)}
+                        disabled={deletingDeviceId === device.id}
+                        className="rounded-xl bg-red-500 px-3 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:bg-slate-300"
+                      >
+                        {deletingDeviceId === device.id ? 'Đang xoá...' : 'Xoá'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
