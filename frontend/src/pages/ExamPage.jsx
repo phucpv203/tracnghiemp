@@ -148,13 +148,16 @@ export default function ExamPage() {
   useEffect(() => {
     if (!currentQuestion || !questionElRef.current || !answersElRef.current) return;
 
-    // Show question content
-    questionElRef.current.innerHTML = `<span class="text-slate-900">${currentQuestionIndex + 1}. </span><span class="text-slate-900">${currentQuestion.content}</span>`;
+    // Tách nội dung câu hỏi và giải thích (khi import, explanation được nối vào content bằng \n\n)
+    const contentParts = currentQuestion.content.split('\n\n');
+    const questionText = contentParts[0];
+    const explanationText = contentParts.length > 1 ? contentParts.slice(1).join('\n\n') : null;
+
+    // Show question content (chỉ phần câu hỏi, không bao gồm giải thích)
+    questionElRef.current.innerHTML = `<span class="text-slate-900">${currentQuestionIndex + 1}. </span><span class="text-slate-900">${questionText}</span>`;
     
     // Show explanation if submitted
     if (submitted && explanationElRef.current) {
-      const contentParts = currentQuestion.content.split('\n\n');
-      const explanationText = contentParts.length > 1 ? contentParts.slice(1).join('\n\n') : null;
       if (explanationText) {
         const correctAns = currentQuestion.answers.find(a => a.is_correct);
         const isCorrect = correctAns && Number(correctAns.id) === Number(answers[currentQuestion.id]);
