@@ -79,29 +79,32 @@ export async function loginUser({ email, password, deviceId, deviceName }) {
     throw new Error('Email hoặc mật khẩu không đúng.');
   }
 
-  const hasDevices = await checkDevicesTable();
+  // Admin không bị kiểm tra/ghi nhận thiết bị
+  if (user.role !== 'admin') {
+    const hasDevices = await checkDevicesTable();
 
-  if (hasDevices && deviceId) {
-    const existingDevice = await getDeviceByUserId(user.id);
+    if (hasDevices && deviceId) {
+      const existingDevice = await getDeviceByUserId(user.id);
 
-    if (existingDevice) {
-      // User đã có thiết bị trong DB
-      if (existingDevice.device_id === deviceId) {
-        // Cùng thiết bị → login bình thường, cập nhật tên thiết bị
-        await createDevice(user.id, deviceId, deviceName || 'Unknown device');
+      if (existingDevice) {
+        // User đã có thiết bị trong DB
+        if (existingDevice.device_id === deviceId) {
+          // Cùng thiết bị → login bình thường, cập nhật tên thiết bị
+          await createDevice(user.id, deviceId, deviceName || 'Unknown device');
+        } else {
+          // Khác thiết bị → báo conflict
+          const err = new Error(`Tài khoản đang được dùng trên "${existingDevice.device_name}". Bạn có muốn xóa thiết bị đó để đăng nhập trên máy này không?`);
+          err.code = 'DEVICE_CONFLICT';
+          err.existingDevice = {
+            deviceId: existingDevice.device_id,
+            deviceName: existingDevice.device_name,
+          };
+          throw err;
+        }
       } else {
-        // Khác thiết bị → báo conflict
-        const err = new Error(`Tài khoản đang được dùng trên "${existingDevice.device_name}". Bạn có muốn xóa thiết bị đó để đăng nhập trên máy này không?`);
-        err.code = 'DEVICE_CONFLICT';
-        err.existingDevice = {
-          deviceId: existingDevice.device_id,
-          deviceName: existingDevice.device_name,
-        };
-        throw err;
+        // Chưa có device → tạo mới
+        await createDevice(user.id, deviceId, deviceName || 'Unknown device');
       }
-    } else {
-      // Chưa có device → tạo mới
-      await createDevice(user.id, deviceId, deviceName || 'Unknown device');
     }
   }
 
@@ -131,9 +134,12 @@ export async function loginAndReplaceDevice({ email, password, deviceId, deviceN
     throw new Error('Email hoặc mật khẩu không đúng.');
   }
 
-  const hasDevices = await checkDevicesTable();
-  if (hasDevices) {
-    await replaceDevice(user.id, deviceId, deviceName || 'Unknown device');
+  // Admin không bị ghi nhận thiết bị
+  if (user.role !== 'admin') {
+    const hasDevices = await checkDevicesTable();
+    if (hasDevices) {
+      await replaceDevice(user.id, deviceId, deviceName || 'Unknown device');
+    }
   }
 
   const token = await signToken(user);

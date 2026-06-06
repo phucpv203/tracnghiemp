@@ -197,41 +197,43 @@ export default function AdminUsers() {
               </div>
             </div>
 
-            <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-              <div className="flex items-center justify-between">
-                <p className="font-semibold">Thiết bị đã đăng nhập</p>
-                <button
-                  onClick={() => toggleDevices(u.id)}
-                  className="rounded-2xl bg-slate-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-600"
-                >
-                  {expandedDevices[u.id] ? 'Ẩn' : 'Xem'}
-                </button>
-              </div>
-              {expandedDevices[u.id] && (
-                <div className="mt-3 space-y-2">
-                  {(!userDevices[u.id] || userDevices[u.id].length === 0) && (
-                    <p className="text-sm text-slate-500">Không có thiết bị nào.</p>
-                  )}
-                  {userDevices[u.id]?.map((device) => (
-                    <div key={device.id} className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm">
-                      <div>
-                        <p className="text-sm font-medium">{device.device_name}</p>
-                        <p className="text-xs text-slate-500">
-                          ID: {device.device_id} &middot; Từ: {new Date(device.created_at).toLocaleDateString('vi-VN')}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteDevice(u.id, device.id, device.device_name)}
-                        disabled={deletingDeviceId === device.id}
-                        className="rounded-xl bg-red-500 px-3 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:bg-slate-300"
-                      >
-                        {deletingDeviceId === device.id ? 'Đang xoá...' : 'Xoá'}
-                      </button>
-                    </div>
-                  ))}
+            {u.role !== 'admin' && (
+              <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold">Thiết bị đã đăng nhập</p>
+                  <button
+                    onClick={() => toggleDevices(u.id)}
+                    className="rounded-2xl bg-slate-700 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-600"
+                  >
+                    {expandedDevices[u.id] ? 'Ẩn' : 'Xem'}
+                  </button>
                 </div>
-              )}
-            </div>
+                {expandedDevices[u.id] && (
+                  <div className="mt-3 space-y-2">
+                    {(!userDevices[u.id] || userDevices[u.id].length === 0) && (
+                      <p className="text-sm text-slate-500">Không có thiết bị nào.</p>
+                    )}
+                    {userDevices[u.id]?.map((device) => (
+                      <div key={device.id} className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm">
+                        <div>
+                          <p className="text-sm font-medium">{device.device_name}</p>
+                          <p className="text-xs text-slate-500">
+                            ID: {device.device_id} &middot; Từ: {new Date(device.created_at).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteDevice(u.id, device.id, device.device_name)}
+                          disabled={deletingDeviceId === device.id}
+                          className="rounded-xl bg-red-500 px-3 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:bg-slate-300"
+                        >
+                          {deletingDeviceId === device.id ? 'Đang xoá...' : 'Xoá'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
