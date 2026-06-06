@@ -375,7 +375,7 @@ export default function StudyPage() {
           <div id="answers" className="space-y-3"></div>
           <div id="explanation" className="hidden"></div>
           
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="mt-8 flex flex-wrap items-center gap-2">
             <button id="prev" className="inline-flex items-center justify-center rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">Câu trước</button>
             <button id="next" className="inline-flex items-center justify-center rounded-3xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/10 transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500">Câu tiếp</button>
             {showExplanation && (
