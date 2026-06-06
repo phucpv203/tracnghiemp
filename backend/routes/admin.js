@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import {
   listUsers,
+  searchUsers,
   updateUser,
   deleteUser,
   getUserDevices,
   deleteUserDevice,
   listCourses,
+  searchCourses,
   createCourse,
   updateCourse,
   deleteCourse,
@@ -24,7 +26,13 @@ router.use(requireAuth, requireAdmin);
 // Users
 router.get('/users', async (req, res) => {
   try {
-    const users = await listUsers();
+    const { search } = req.query;
+    let users;
+    if (search && search.trim()) {
+      users = await searchUsers(search.trim());
+    } else {
+      users = await listUsers();
+    }
     res.json({ users });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -83,7 +91,13 @@ router.put('/users/:id/progress/:courseId', async (req, res) => {
 // Courses
 router.get('/courses', async (req, res) => {
   try {
-    const courses = await listCourses();
+    const { search } = req.query;
+    let courses;
+    if (search && search.trim()) {
+      courses = await searchCourses(search.trim());
+    } else {
+      courses = await listCourses();
+    }
     res.json({ courses });
   } catch (error) {
     res.status(500).json({ message: error.message });

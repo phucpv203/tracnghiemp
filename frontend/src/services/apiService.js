@@ -99,9 +99,15 @@ export const apiService = {
     request(`/exams/${courseId}/submit`, { method: 'POST', body: JSON.stringify({ answers }) }),
 
   // ===== Admin =====
-  getUsers: () => request('/admin/users'),
+  getUsers: (searchTerm) => {
+    const query = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
+    return request(`/admin/users${query}`);
+  },
   updateUser: (id, data) => request(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  getAdminCourses: () => request('/admin/courses'),
+  getAdminCourses: (searchTerm) => {
+    const query = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
+    return request(`/admin/courses${query}`);
+  },
   createCourse: (data) => request('/admin/courses', { method: 'POST', body: JSON.stringify(data) }),
   updateCourse: (id, data) => request(`/admin/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCourse: (id) => request(`/admin/courses/${id}`, { method: 'DELETE' }),

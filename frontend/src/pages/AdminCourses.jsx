@@ -6,6 +6,7 @@ import { apiService } from '../services/apiService';
 export default function AdminCourses() {
   const { onLogout } = useContext(AuthContext);
   const [courses, setCourses] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [newCourse, setNewCourse] = useState({ title: '', requiredScore: 0 });
   const [uploadCourseId, setUploadCourseId] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
@@ -13,9 +14,19 @@ export default function AdminCourses() {
   const [deletingCourseId, setDeletingCourseId] = useState(null);
   const [toast, setToast] = useState(null);
 
+  const fetchCourses = (search) => {
+    apiService.getAdminCourses(search || undefined).then((res) => setCourses(res.courses || []));
+  };
+
   useEffect(() => {
-    apiService.getAdminCourses().then((res) => setCourses(res.courses || []));
+    fetchCourses();
   }, []);
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    fetchCourses(value);
+  };
 
   const create = async () => {
     const res = await apiService.createCourse(newCourse);
@@ -123,6 +134,17 @@ export default function AdminCourses() {
           />
           <button className="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-white" onClick={importQuestions}>Import câu hỏi</button>
           {importMessage && <p className="mt-3 text-sm text-slate-700">{importMessage}</p>}
+        </div>
+
+        {/* Search bar */}
+        <div className="mt-2 mb-2">
+          <input
+            type="text"
+            placeholder="Tìm kiếm môn học theo tên..."
+            value={searchTerm}
+            onChange={handleSearch}
+            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-slate-400 focus:outline-none"
+          />
         </div>
 
         {courses.map((c) => (

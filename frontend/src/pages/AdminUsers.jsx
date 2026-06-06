@@ -6,6 +6,7 @@ import { apiService } from '../services/apiService';
 export default function AdminUsers() {
   const { onLogout } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [passwords, setPasswords] = useState({});
   const [points, setPoints] = useState({});
@@ -15,8 +16,8 @@ export default function AdminUsers() {
   const [expandedDevices, setExpandedDevices] = useState({});
   const [deletingDeviceId, setDeletingDeviceId] = useState(null);
 
-  useEffect(() => {
-    apiService.getUsers().then((res) => {
+  const fetchUsers = (search) => {
+    apiService.getUsers(search || undefined).then((res) => {
       setUsers(res.users || []);
       const initialPoints = {};
       (res.users || []).forEach((user) => {
@@ -24,7 +25,17 @@ export default function AdminUsers() {
       });
       setPoints(initialPoints);
     });
+  };
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    fetchUsers(value);
+  };
 
   const handleDeleteUser = async (userId, userName) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xoá người dùng "${userName}"? Hành động này không thể hoàn tác và sẽ xoá tất cả dữ liệu liên quan (tiến trình, lịch sử thanh toán).`)) {
@@ -126,6 +137,17 @@ export default function AdminUsers() {
           </button>
         </div>
       </div>
+      {/* Search bar */}
+      <div className="mt-6 mb-6">
+        <input
+          type="text"
+          placeholder="Tìm kiếm người dùng theo tên hoặc email..."
+          value={searchTerm}
+          onChange={handleSearch}
+          className="w-full rounded-2xl border border-slate-200 px-5 py-3 text-sm focus:border-slate-400 focus:outline-none"
+        />
+      </div>
+
       <div className="mt-6 space-y-6">
         {users.map((u) => (
           <div key={u.id} className="rounded-3xl bg-white p-6 shadow-sm">

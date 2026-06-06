@@ -56,9 +56,9 @@ export default function DashboardPage() {
     return map;
   }, [progress]);
 
-  // Process courses with their status
+  // Process courses with their status and sort: unlocked first (A-Z), then locked (A-Z)
   const activeCourses = useMemo(() => {
-    return courses.map(course => {
+    const processed = courses.map(course => {
       const userProgress = progressMap.get(Number(course.id));
       // Unlocked = có record trong user_progress (status bất kỳ: learning/completed)
       // Locked = chưa có record, cần dùng điểm để mở
@@ -71,6 +71,14 @@ export default function DashboardPage() {
         unlocked: isUnlocked,
         requiredPoints
       };
+    });
+
+    // Sắp xếp: mở khóa lên đầu (A-Z), chưa mở khóa ở dưới (A-Z)
+    return processed.sort((a, b) => {
+      if (a.unlocked !== b.unlocked) {
+        return a.unlocked ? -1 : 1;
+      }
+      return a.title.localeCompare(b.title, 'vi');
     });
   }, [courses, progressMap]);
 

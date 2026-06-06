@@ -11,6 +11,43 @@ function slugify(text) {
     .replace(/\-+/g, '-');
 }
 
+export async function searchUsers(searchTerm) {
+  const term = `%${searchTerm}%`;
+  const result = await query(
+    `SELECT
+       u.id,
+       u.name,
+       u.email,
+       u.role,
+       u.points,
+       COALESCE(
+         json_agg(
+           json_build_object(
+             'userId', up.user_id,
+             'courseId', up.course_id,
+             'score', up.score,
+             'status', up.status,
+             'lastExamId', up.last_exam_id,
+             'startedAt', up.started_at,
+             'completedAt', up.completed_at,
+             'courseTitle', c.title,
+             'requiredScore', c.required_points
+           ) ORDER BY up.course_id
+         ) FILTER (WHERE up.id IS NOT NULL), '[]'
+       ) AS progress
+     FROM users u
+     LEFT JOIN user_progress up ON up.user_id = u.id
+     LEFT JOIN courses c ON c.id = up.course_id
+     WHERE u.name ILIKE $1 OR u.email ILIKE $1
+     GROUP BY u.id
+     ORDER BY u.id`
+  );
+  return result.rows.map((row) => ({
+    ...row,
+    progress: row.progress || [],
+  }));
+}
+
 export async function listUsers() {
   const result = await query(
     `SELECT
@@ -82,6 +119,15 @@ export async function updateUser(id, data) {
     values
   );
   return result.rows[0];
+}
+
+export async function searchCourses(searchTerm) {
+  const term = `%${searchTerm}%`;
+  const result = await query(
+    'SELECT * FROM courses WHERE title ILIKE $1 ORDER BY id',
+    [term]
+  );
+  return result.rows;
 }
 
 export async function listCourses() {
