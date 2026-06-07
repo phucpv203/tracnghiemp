@@ -1,12 +1,9 @@
 /**
  * DashboardPage - Trang chủ hiển thị danh sách môn học
  * 
- * Chức năng chính:
- * - Hiển thị thông tin user đã đăng nhập
- * - Hiển thị điểm của user
- * - Lấy danh sách khóa học từ database
- * - Cho phép mở khóa môn học bằng điểm
- * - Cho phép điều hướng đến trang ôn tập hoặc thi thử
+ * Hỗ trợ 2 trạng thái:
+ * - Đã đăng nhập: hiển thị đầy đủ chức năng (học tập, thi thử, mở khóa, điểm)
+ * - Chưa đăng nhập: hiển thị danh sách môn học dạng chỉ xem + nút Đăng nhập/Đăng ký
  */
 import { useContext, useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -19,13 +16,15 @@ export default function DashboardPage() {
   
   // State management
   const [courses, setCourses] = useState([]);        // Danh sách khóa học từ DB
-  const [progress, setProgress] = useState([]);      // Tiến độ học tập
-  const [userPoints, setUserPoints] = useState(0);    // Điểm của user
+  const [progress, setProgress] = useState([]);      // Tiến độ học tập (chỉ khi đã đăng nhập)
+  const [userPoints, setUserPoints] = useState(0);    // Điểm của user (chỉ khi đã đăng nhập)
   const [loading, setLoading] = useState(true);      // Đang tải dữ liệu
   const [unlockingCourseId, setUnlockingCourseId] = useState(null); // Môn đang xác nhận mở khóa
   const [unlockingLoading, setUnlockingLoading] = useState(false);
   const [toast, setToast] = useState(null); // {message, type: 'success'|'error'}
   const [searchTerm, setSearchTerm] = useState('');   // Từ khóa tìm kiếm môn học
+
+  const isAuthenticated = !!user;
 
   // Load data from API
   useEffect(() => {
@@ -34,9 +33,12 @@ export default function DashboardPage() {
         const coursesData = await apiService.getCourses();
         setCourses(coursesData.items || []);
         
-        const progressData = await apiService.getProgress();
-        setProgress(progressData.progress || []);
-        setUserPoints(progressData.points || 0);
+        // Chỉ gọi progress khi đã đăng nhập
+        if (isAuthenticated) {
+          const progressData = await apiService.getProgress();
+          setProgress(progressData.progress || []);
+          setUserPoints(progressData.points || 0);
+        }
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
       } finally {
@@ -45,7 +47,7 @@ export default function DashboardPage() {
     };
     
     loadDashboardData();
-  }, []);
+  }, [isAuthenticated]);
   
   // Build map courseId -> progress data for quick lookup
   const progressMap = useMemo(() => {
@@ -135,28 +137,59 @@ export default function DashboardPage() {
       <div className="mb-8 flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Trang chủ môn học</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-900">Xin chào, {user?.name || user?.email}</h1>
-          <p className="mt-3 max-w-2xl text-sm text-slate-600">Chọn môn học để ôn tập hoặc thi thử.</p>
-          {user?.role === 'admin' && (
+          
+          {isAuthenticated ? (
+            <>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-900">Xin chào, {user?.name || user?.email}</h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-600">Chọn môn học để ôn tập hoặc thi thử.</p>
+            </>
+          ) : (
+            <>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-900">Hệ thống ôn thi trắc nghiệm</h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-600">Đăng nhập để bắt đầu ôn tập và thi thử các môn học.</p>
+            </>
+          )}
+          
+          {isAuthenticated && user?.role === 'admin' && (
             <Link to="/admin" className="mt-3 inline-flex rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
               Mở trang quản trị Admin
             </Link>
           )}
         </div>
+        
         <div className="flex items-center gap-4">
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-3 text-center relative">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">Điểm của bạn</p>
-            <p className="text-2xl font-bold text-amber-700">{userPoints}</p>
-            <button
-              onClick={() => navigate('/topup')}
-              className="mt-2 w-full rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition"
-            >
-              + Nạp thêm điểm
-            </button>
-          </div>
-          <button onClick={onLogout} className="self-start rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
-            Đăng xuất
-          </button>
+          {isAuthenticated ? (
+            <>
+              <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-3 text-center relative">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">Điểm của bạn</p>
+                <p className="text-2xl font-bold text-amber-700">{userPoints}</p>
+                <button
+                  onClick={() => navigate('/topup')}
+                  className="mt-2 w-full rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition"
+                >
+                  + Nạp thêm điểm
+                </button>
+              </div>
+              <button onClick={onLogout} className="self-start rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
+                Đăng xuất
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                to="/register"
+                className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+              >
+                Đăng ký
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -200,7 +233,7 @@ export default function DashboardPage() {
             <article key={course.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4">
               <h2 className="text-xl font-semibold text-slate-900">{course.title}</h2>
               
-              {course.unlocked ? (
+              {course.unlocked && isAuthenticated ? (
                 <div className="flex flex-shrink-0 gap-3">
                   <button
                     onClick={() => navigate(`/study/${course.id}`)}
@@ -215,7 +248,7 @@ export default function DashboardPage() {
                     Thi thử
                   </button>
                 </div>
-              ) : (
+              ) : isAuthenticated ? (
                 <div className="flex flex-shrink-0">
                   {unlockingCourseId === course.id ? (
                     <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-lg min-w-[240px] relative z-50">
@@ -256,14 +289,21 @@ export default function DashboardPage() {
                     </button>
                   )}
                 </div>
+              ) : (
+                /* Chưa đăng nhập: hiển thị badge "Cần đăng nhập" */
+                <div className="flex flex-shrink-0">
+                  <span className="rounded-full bg-slate-100 border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-400">
+                    🔒 Cần đăng nhập
+                  </span>
+                </div>
               )}
             </article>
           ))}
         </div>
       )}
 
-      {/* Overlay khi đang mở khóa */}
-      {unlockingCourseId !== null && (
+      {/* Overlay khi đang mở khóa (chỉ khi đã đăng nhập) */}
+      {isAuthenticated && unlockingCourseId !== null && (
         <div className="fixed inset-0 bg-black/20 z-40" onClick={() => !unlockingLoading && setUnlockingCourseId(null)}></div>
       )}
 

@@ -127,14 +127,7 @@ function App() {
         <Routes>
           <Route path="/login" element={user ? <Navigate to="/trang-chu" replace /> : <LoginPage />} />
           <Route path="/register" element={user ? <Navigate to="/trang-chu" replace /> : <RegisterPage />} />
-          <Route
-            path="/trang-chu"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/trang-chu" element={<DashboardPage />} />
           <Route
             path="/admin"
             element={
@@ -183,7 +176,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to={user ? '/trang-chu' : '/login'} replace />} />
+          <Route path="*" element={<Navigate to="/trang-chu" replace />} />
         </Routes>
       </div>
     </AuthContext.Provider>
