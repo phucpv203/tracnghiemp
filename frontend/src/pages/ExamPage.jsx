@@ -137,10 +137,12 @@ export default function ExamPage() {
       questionListInnerRef.current.appendChild(button);
     });
     
-    // Auto-scroll to current question
+    // Auto-scroll to current question (chỉ cuộn ngang, tránh cuộn dọc)
     const currentBtn = questionListInnerRef.current.querySelector('[data-current="true"]');
     if (currentBtn) {
-      currentBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const container = questionListInnerRef.current;
+      const scrollAmount = currentBtn.offsetLeft - container.offsetLeft - container.clientWidth / 2 + currentBtn.clientWidth / 2;
+      container.scrollTo({ left: scrollAmount, behavior: 'smooth' });
     }
   }, [currentQuestionIndex, answers, questions, submitted, correctAnswers]);
 

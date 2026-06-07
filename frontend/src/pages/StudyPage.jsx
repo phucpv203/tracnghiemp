@@ -96,10 +96,12 @@ export default function StudyPage() {
     });
     questionListInner.appendChild(ul);
     
-    // Auto-scroll to current question
+    // Auto-scroll to current question (chỉ cuộn ngang, tránh cuộn dọc)
     const currentItem = ul.querySelector('[data-current="true"]');
     if (currentItem) {
-      currentItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const container = questionListInner;
+      const scrollAmount = currentItem.offsetLeft - container.offsetLeft - container.clientWidth / 2 + currentItem.clientWidth / 2;
+      container.scrollTo({ left: scrollAmount, behavior: 'smooth' });
     }
   }, [questions, currentQuestionIndex, answeredQuestions]);
 
