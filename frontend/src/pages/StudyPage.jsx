@@ -23,6 +23,7 @@ export default function StudyPage() {
   const [selectedAnswer, setSelectedAnswer] = useState(null);          // Đáp án đã chọn
   const [showExplanation, setShowExplanation] = useState(false);       // Hiển thị giải thích
   const [answeredQuestions, setAnsweredQuestions] = useState({}); // Các câu đã trả lời
+  const [shuffledAnswersMap, setShuffledAnswersMap] = useState({}); // {questionId: [answers]} - đáp án đã xáo trộn
 
   // Compute current question (must be before useEffects that use it)
   const currentQuestion = questions[currentQuestionIndex];
@@ -38,7 +39,17 @@ export default function StudyPage() {
         console.log('Study data received:', data);
         
         setCourse(data.course);
-        setQuestions(data.course.questions || []);
+        const loadedQuestions = data.course.questions || [];
+        setQuestions(loadedQuestions);
+        
+        // Xáo trộn đáp án cho mỗi câu
+        const shuffled = {};
+        loadedQuestions.forEach((q) => {
+          if (q.answers && Array.isArray(q.answers)) {
+            shuffled[q.id] = shuffleArray([...q.answers]);
+          }
+        });
+        setShuffledAnswersMap(shuffled);
       } catch (error) {
         console.error('Failed to load study data:', error);
         alert('Không thể tải dữ liệu học tập. Vui lòng kiểm tra kết nối hoặc thử lại sau.');
@@ -144,11 +155,13 @@ export default function StudyPage() {
     if (answersEl) {
       answersEl.innerHTML = '';
 
-      if (currentQuestion.answers && Array.isArray(currentQuestion.answers)) {
+      // Lấy danh sách đáp án đã xáo trộn (nếu có), nếu không thì dùng thứ tự gốc
+      const displayAnswers = shuffledAnswersMap[currentQuestion.id] || currentQuestion.answers;
+      if (displayAnswers && Array.isArray(displayAnswers)) {
         const correctAnswer = currentQuestion.answers.find(a => a.is_correct);
         const isAnswered = answeredQuestions[currentQuestion.id] !== undefined;
 
-        currentQuestion.answers.forEach((answer, index) => {
+        displayAnswers.forEach((answer, index) => {
           const btn = document.createElement('button');
           const letterLabel = String.fromCharCode(65 + index);
           btn.textContent = `${letterLabel}. ${answer.answer_text}`;
@@ -194,6 +207,41 @@ export default function StudyPage() {
     }
   }, [currentQuestionIndex, currentQuestion, selectedAnswer, showExplanation, answeredQuestions]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKeyDown(e) {
+      // a / ArrowLeft -> previous question
+      if (e.key === 'a' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrev();
+        return;
+      }
+      
+      // d / ArrowRight -> next question
+      if (e.key === 'd' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNext();
+        return;
+      }
+      
+      // 1, 2, 3, 4, 5 -> select answer by index (chỉ khi chưa trả lời câu này)
+      if (!showExplanation && currentQuestion && currentQuestion.answers) {
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= 5) {
+          const answerIndex = num - 1;
+          if (answerIndex < currentQuestion.answers.length) {
+            e.preventDefault();
+            const correctAnswer = currentQuestion.answers.find(a => a.is_correct);
+            handleAnswerClick(currentQuestion.answers[answerIndex].id, correctAnswer);
+          }
+        }
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentQuestionIndex, currentQuestion, showExplanation, answeredQuestions]);
+
   // Update navigation buttons
   useEffect(() => {
     const prevBtn = document.getElementById('prev');
@@ -222,6 +270,15 @@ export default function StudyPage() {
 
   // ========== NOW IT'S SAFE TO DO EARLY RETURN ==========
   if (!course) return <div className="flex justify-center items-center min-h-screen">Đang tải...</div>;
+
+  function shuffleArray(arr) {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
 
   const handleAnswerClick = (answerId, correctAnswer) => {
     // Immediately process the answer

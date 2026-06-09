@@ -23,8 +23,12 @@ router.get('/:courseId', async (req, res) => {
     const course = courseRes.rows[0];
     const questions = await getQuestionsWithAnswers(course.id);
 
-    // Randomly select up to 80 questions
-    const shuffled = [...questions].sort(() => Math.random() - 0.5);
+    // Fisher-Yates shuffle để xáo trộn ngẫu nhiên đều, tránh thiên vị
+    const shuffled = [...questions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     const selectedQuestions = shuffled.slice(0, 80);
 
     const exam = {

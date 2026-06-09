@@ -28,6 +28,7 @@ export default function ExamPage() {
   const [result, setResult] = useState(null);       // Kết quả sau khi nộp
   const [loading, setLoading] = useState(true);     // Đang tải dữ liệu
   const [correctAnswers, setCorrectAnswers] = useState({}); // {questionId: correctAnswerId}
+  const [shuffledAnswersMap, setShuffledAnswersMap] = useState({}); // {questionId: [answerId, ...]} - thứ tự đáp án đã xáo trộn
 
   // Refs để truy cập DOM elements an toàn trong React
   const questionElRef = useRef(null);        // Element hiển thị câu hỏi
@@ -55,6 +56,7 @@ export default function ExamPage() {
         // Initialize answers object and store correct answers
         const initialAnswers = {};
         const correct = {};
+        const shuffled = {};
         if (examData.data && Array.isArray(examData.data)) {
           examData.data.forEach((q) => {
             initialAnswers[q.id] = null;
@@ -62,10 +64,13 @@ export default function ExamPage() {
             if (correctAns) {
               correct[q.id] = correctAns.id;
             }
+            // Xáo trộn đáp án cho mỗi câu
+            shuffled[q.id] = shuffleArray([...q.answers]);
           });
         }
         setAnswers(initialAnswers);
         setCorrectAnswers(correct);
+        setShuffledAnswersMap(shuffled);
       } catch (error) {
         console.error('Failed to load exam:', error);
         alert('Không thể tải đề thi. Vui lòng kiểm tra kết nối hoặc thử lại sau.');
@@ -179,8 +184,10 @@ export default function ExamPage() {
     
     answersElRef.current.innerHTML = '';
     
-    if (currentQuestion.answers && Array.isArray(currentQuestion.answers)) {
-      currentQuestion.answers.forEach((answer) => {
+    // Lấy danh sách đáp án đã xáo trộn (nếu có), nếu không thì dùng thứ tự gốc
+    const displayAnswers = shuffledAnswersMap[currentQuestion.id] || currentQuestion.answers;
+    if (displayAnswers && Array.isArray(displayAnswers)) {
+      displayAnswers.forEach((answer) => {
         if (submitted) {
           // After submit - show colored result
           const isUserAnswer = Number(answers[currentQuestion.id]) === Number(answer.id);
@@ -243,6 +250,41 @@ export default function ExamPage() {
     }
   }, [currentQuestionIndex, answers, submitted, currentQuestion, correctAnswers]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (submitted) return;
+      
+      // a / ArrowLeft -> previous question
+      if (e.key === 'a' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrev();
+        return;
+      }
+      
+      // d / ArrowRight -> next question
+      if (e.key === 'd' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNext();
+        return;
+      }
+      
+      // 1, 2, 3, 4, 5 -> select answer by index
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= 5 && currentQuestion && currentQuestion.answers) {
+        const answerIndex = num - 1;
+        if (answerIndex < currentQuestion.answers.length) {
+          e.preventDefault();
+          const answerId = currentQuestion.answers[answerIndex].id;
+          handleAnswerSelect(answerId);
+        }
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [submitted, currentQuestionIndex, currentQuestion, answers]);
+
   // Update navigation button handlers
   useEffect(() => {
     const prevBtn = document.getElementById('prev');
@@ -274,6 +316,15 @@ export default function ExamPage() {
   if (!exam) return <div className="flex justify-center items-center min-h-screen">Không tìm thấy đề thi</div>;
 
   
+  function shuffleArray(arr) {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
   function formatTime(seconds) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
