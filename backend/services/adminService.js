@@ -250,13 +250,41 @@ export async function updateQuestion(id, data) {
     values.push(Number(data.difficulty));
   }
 
-  if (!updates.length) return null;
+  if (!updates.length && !Array.isArray(data.answers)) return null;
 
-  const result = await query(
-    `UPDATE questions SET ${updates.join(', ')} WHERE id = $1 RETURNING *`,
-    values
-  );
-  return result.rows[0];
+  let question = null;
+  if (updates.length) {
+    const result = await query(
+      `UPDATE questions SET ${updates.join(', ')} WHERE id = $1 RETURNING *`,
+      values
+    );
+    question = result.rows[0];
+  } else {
+    const result = await query('SELECT * FROM questions WHERE id = $1', [Number(id)]);
+    if (!result.rows.length) return null;
+    question = result.rows[0];
+  }
+
+  // Nếu có cung cấp answers, xoá answers cũ và insert lại
+  if (Array.isArray(data.answers)) {
+    // Xoá answers cũ
+    await query('DELETE FROM answers WHERE question_id = $1', [Number(id)]);
+
+    // Insert answers mới
+    const answersInserted = [];
+    for (let i = 0; i < data.answers.length; i++) {
+      const text = data.answers[i];
+      const is_correct = i === Number(data.correct);
+      const aRes = await query(
+        'INSERT INTO answers(question_id, answer_text, is_correct) VALUES ($1, $2, $3) RETURNING *',
+        [Number(id), text, is_correct]
+      );
+      answersInserted.push(aRes.rows[0]);
+    }
+    question.answers = answersInserted;
+  }
+
+  return question;
 }
 
 export async function importQuestions(courseId, items) {

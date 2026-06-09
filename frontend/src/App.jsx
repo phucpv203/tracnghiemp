@@ -19,6 +19,7 @@ import ExamPage from './pages/ExamPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminCourses from './pages/AdminCourses';
+import AdminEditQuestions from './pages/AdminEditQuestions';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import { authService } from './services/authService';
@@ -149,6 +150,14 @@ function App() {
             element={
               <AdminProtectedRoute>
                 <AdminCourses />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/courses/:courseId/questions"
+            element={
+              <AdminProtectedRoute>
+                <AdminEditQuestions />
               </AdminProtectedRoute>
             }
           />

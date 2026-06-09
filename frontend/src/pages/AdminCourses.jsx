@@ -1,10 +1,11 @@
 import { useEffect, useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
 
 export default function AdminCourses() {
   const { onLogout } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [newCourse, setNewCourse] = useState({ title: '', requiredScore: 0 });
@@ -169,6 +170,12 @@ export default function AdminCourses() {
             />
             <div className="mt-3 flex gap-2">
               <button onClick={() => update(c.id)} className="rounded-md bg-sky-600 px-3 py-1 text-white">Lưu</button>
+              <button
+                onClick={() => navigate(`/admin/courses/${c.id}/questions`)}
+                className="rounded-md bg-amber-600 px-3 py-1 text-white hover:bg-amber-700"
+              >
+                Sửa câu hỏi
+              </button>
             </div>
           </div>
         ))}

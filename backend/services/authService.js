@@ -39,7 +39,7 @@ async function signToken(user) {
       role: user.role,
     },
     SECRET,
-    { expiresIn: '8h' }
+    { expiresIn: '15d' }
   );
 }
 
