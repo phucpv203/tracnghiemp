@@ -20,9 +20,9 @@ router.post('/create-payment', requireAuth, async (req, res) => {
 
     // Bảng giá: mỗi 1 điểm = 1000 VNĐ
     const PRICE_PER_POINT = 1000;
-    const allowedPoints = [100, 200, 300];
+    const allowedPoints = [100, 150, 200];
     if (!allowedPoints.includes(points)) {
-      return res.status(400).json({ message: 'Chỉ chấp nhận gói 100, 200 hoặc 300 điểm.' });
+      return res.status(400).json({ message: 'Chỉ chấp nhận gói 100, 150 hoặc 200 điểm.' });
     }
 
     const amount = points * PRICE_PER_POINT;
