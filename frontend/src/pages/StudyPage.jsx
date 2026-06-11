@@ -6,6 +6,7 @@
  * - Cho phép người dùng chọn đáp án và kiểm tra ngay lập tức
  * - Theo dõi tiến độ học tập
  * - Lưu tiến độ vào localStorage để không mất khi tải lại trang
+ * - Lưu vị trí câu hỏi hiện tại, khi vào lại sẽ trỏ đến câu đang học dở
  */
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -24,6 +25,7 @@ export default function StudyPage() {
   const [showExplanation, setShowExplanation] = useState(false);       // Hiển thị giải thích
   const [answeredQuestions, setAnsweredQuestions] = useState({}); // Các câu đã trả lời
   const [shuffledAnswersMap, setShuffledAnswersMap] = useState({}); // {questionId: [answers]} - đáp án đã xáo trộn
+  const [initialIndexLoaded, setInitialIndexLoaded] = useState(false); // Đã khôi phục index từ localStorage chưa
 
   // Compute current question (must be before useEffects that use it)
   const currentQuestion = questions[currentQuestionIndex];
@@ -58,13 +60,35 @@ export default function StudyPage() {
     loadStudyData();
   }, [courseId]);
 
-  // Load answers from localStorage
+  // Load answers & last question index from localStorage
   useEffect(() => {
     const savedAnswers = localStorage.getItem(`study_answers_${courseId}`);
     if (savedAnswers) {
       setAnsweredQuestions(JSON.parse(savedAnswers));
     }
+    const savedIndex = localStorage.getItem(`study_index_${courseId}`);
+    if (savedIndex !== null) {
+      const idx = parseInt(savedIndex, 10);
+      if (!isNaN(idx)) {
+        setCurrentQuestionIndex(idx);
+      }
+    }
+    setInitialIndexLoaded(true);
   }, [courseId]);
+
+  // Sau khi khôi phục index và câu hỏi đã tải xong, khôi phục trạng thái của câu đó
+  useEffect(() => {
+    if (!initialIndexLoaded || !questions.length || !currentQuestion) return;
+    
+    const answeredData = answeredQuestions[currentQuestion.id];
+    if (answeredData) {
+      setSelectedAnswer(answeredData.selected);
+      setShowExplanation(true);
+    } else {
+      setSelectedAnswer(null);
+      setShowExplanation(false);
+    }
+  }, [initialIndexLoaded, questions, currentQuestion?.id]);
 
   // Update DOM elements for question list (horizontal scrollable display)
   useEffect(() => {
@@ -334,6 +358,7 @@ export default function StudyPage() {
     if (currentQuestionIndex < questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
+      localStorage.setItem(`study_index_${courseId}`, nextIndex);
       const nextQuestion = questions[nextIndex];
       const answeredData = answeredQuestions[nextQuestion?.id];
       if (answeredData) {
@@ -350,6 +375,7 @@ export default function StudyPage() {
     if (currentQuestionIndex > 0) {
       const prevIndex = currentQuestionIndex - 1;
       setCurrentQuestionIndex(prevIndex);
+      localStorage.setItem(`study_index_${courseId}`, prevIndex);
       const prevQuestion = questions[prevIndex];
       const answeredData = answeredQuestions[prevQuestion?.id];
       if (answeredData) {
@@ -364,11 +390,16 @@ export default function StudyPage() {
 
   const handleResetProgress = () => {
     setAnsweredQuestions({});
+    setCurrentQuestionIndex(0);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
     localStorage.removeItem(`study_answers_${courseId}`);
+    localStorage.removeItem(`study_index_${courseId}`);
   };
 
   const handleGoToQuestion = (index) => {
     setCurrentQuestionIndex(index);
+    localStorage.setItem(`study_index_${courseId}`, index);
     
     // Check if this question was already answered
     const question = questions[index];
