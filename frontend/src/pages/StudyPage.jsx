@@ -104,15 +104,15 @@ export default function StudyPage() {
       let itemBgClass, badgeClass;
       if (answeredData) {
         if (answeredData.isCorrect) {
-          itemBgClass = 'bg-blue-100';
+          itemBgClass = 'bg-blue-100 dark:bg-blue-900/40';
           badgeClass = 'bg-blue-600 text-white';
         } else {
-          itemBgClass = 'bg-red-100';
+          itemBgClass = 'bg-red-100 dark:bg-red-900/40';
           badgeClass = 'bg-red-600 text-white';
         }
       } else {
-        itemBgClass = index === currentQuestionIndex ? 'bg-sky-50' : 'bg-white hover:bg-slate-50';
-        badgeClass = index === currentQuestionIndex ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-600';
+        itemBgClass = index === currentQuestionIndex ? 'bg-sky-50 dark:bg-sky-900/30' : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700';
+        badgeClass = index === currentQuestionIndex ? 'bg-sky-600 text-white' : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300';
       }
       item.className = `flex flex-col items-center gap-1 p-2 w-14 rounded-xl transition cursor-pointer flex-shrink-0 ${itemBgClass}`;
       
@@ -155,7 +155,7 @@ export default function StudyPage() {
     const explanationText = contentParts.length > 1 ? contentParts.slice(1).join('\n\n') : null;
 
     if (questionEl) {
-      questionEl.innerHTML = `<span class="text-slate-900">${currentQuestionIndex + 1}. </span><span class="text-slate-900">${questionText}</span>`;
+      questionEl.innerHTML = `<span class="text-slate-900 dark:text-slate-100">${currentQuestionIndex + 1}. </span><span class="text-slate-900 dark:text-slate-100">${questionText}</span>`;
     }
 
     // Show/hide explanation
@@ -164,9 +164,9 @@ export default function StudyPage() {
         const correctAnswer = currentQuestion.answers.find(a => a.is_correct);
         const isCorrect = correctAnswer && Number(correctAnswer.id) === Number(selectedAnswer);
         explanationEl.innerHTML = `
-          <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p class="text-sm font-semibold text-slate-700">💡 Giải thích:</p>
-            <p class="mt-2 text-sm text-slate-600 leading-relaxed">${explanationText}</p>
+          <div class="mt-4 rounded-2xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 p-4">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">💡 Giải thích:</p>
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">${explanationText}</p>
           </div>
         `;
         explanationEl.className = 'block';
@@ -196,17 +196,17 @@ export default function StudyPage() {
             btn.disabled = true;
             if (answer.is_correct) {
               // Correct answer: blue
-              btn.className += ' bg-blue-50 border-blue-300 text-blue-800';
+              btn.className += ' bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200';
             } else if (Number(answer.id) === Number(selectedAnswer) && selectedAnswer !== null) {
               // User's wrong selection: red
-              btn.className += ' bg-red-50 border-red-300 text-red-800';
+              btn.className += ' bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-200';
             } else {
               // Other answers: white
-              btn.className += ' bg-white border-slate-200 text-slate-600';
+              btn.className += ' bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400';
             }
           } else {
             // Not answered yet -> allow selecting
-            btn.className += ' bg-white border-slate-200 text-slate-700 hover:border-sky-400 hover:bg-sky-50';
+            btn.className += ' bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:border-sky-400 dark:hover:border-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/30';
             btn.onclick = () => handleAnswerClick(answer.id, correctAnswer);
           }
 
@@ -220,7 +220,7 @@ export default function StudyPage() {
         const correctAnswer = currentQuestion.answers.find(a => a.is_correct);
         const isCorrect = correctAnswer && Number(correctAnswer.id) === Number(selectedAnswer);
         resultEl.innerHTML = `
-          <span class="${isCorrect ? 'text-blue-600' : 'text-red-500'} font-semibold">
+          <span class="${isCorrect ? 'text-blue-600 dark:text-blue-400' : 'text-red-500 dark:text-red-400'} font-semibold">
             ${isCorrect ? '✓ Chính xác!' : '✗ Sai rồi!'} 
             ${!isCorrect ? `Đáp án đúng: ${String.fromCharCode(65 + currentQuestion.answers.findIndex(a => a.is_correct))}` : ''}
           </span>
@@ -276,8 +276,8 @@ export default function StudyPage() {
       prevBtn.disabled = currentQuestionIndex === 0;
       prevBtn.className = `inline-flex items-center justify-center rounded-3xl border px-4 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-sky-500 ${
         currentQuestionIndex === 0
-          ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
-          : 'border-slate-300 bg-slate-50 text-slate-900 hover:bg-slate-100'
+          ? 'border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-600 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+          : 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600'
       }`;
     }
 
@@ -286,7 +286,7 @@ export default function StudyPage() {
       nextBtn.disabled = currentQuestionIndex === questions.length - 1;
       nextBtn.className = `inline-flex items-center justify-center rounded-3xl px-4 py-3 text-sm font-semibold shadow-lg shadow-sky-500/10 transition focus:outline-none focus:ring-2 focus:ring-sky-500 ${
         currentQuestionIndex === questions.length - 1
-          ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+          ? 'bg-slate-300 dark:bg-slate-600 text-slate-500 dark:text-slate-400 cursor-not-allowed'
           : 'bg-sky-600 text-white hover:bg-sky-700'
       }`;
     }
@@ -452,7 +452,7 @@ export default function StudyPage() {
                 <span>Đã trả lời sai</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-slate-300"></span>
+                <span className="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                 <span>Chưa trả lời</span>
               </div>
             </div>

@@ -119,7 +119,7 @@ export default function ExamPage() {
         const userAnswer = answers[q.id];
         const correctId = correctAnswers[q.id];
         if (!userAnswer) {
-          bgClass = 'bg-slate-200 text-slate-500';
+          bgClass = 'bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-400';
         } else if (Number(userAnswer) === Number(correctId)) {
           bgClass = 'bg-blue-600 text-white';
         } else {
@@ -129,8 +129,8 @@ export default function ExamPage() {
         bgClass = index === currentQuestionIndex
           ? 'bg-sky-600 text-white'
           : answers[q.id] !== null
-          ? 'bg-green-100 text-green-900 border border-green-300'
-          : 'bg-slate-100 text-slate-700 border border-slate-200';
+          ? 'bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-200 border border-green-300 dark:border-green-700'
+          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600';
       }
       button.className = `w-10 h-10 flex items-center justify-center rounded-2xl font-semibold text-sm transition ${bgClass}`;
       // Mark current item for scrolling
@@ -161,7 +161,7 @@ export default function ExamPage() {
     const explanationText = contentParts.length > 1 ? contentParts.slice(1).join('\n\n') : null;
 
     // Show question content (chỉ phần câu hỏi, không bao gồm giải thích)
-    questionElRef.current.innerHTML = `<span class="text-slate-900">${currentQuestionIndex + 1}. </span><span class="text-slate-900">${questionText}</span>`;
+    questionElRef.current.innerHTML = `<span class="text-slate-900 dark:text-slate-100">${currentQuestionIndex + 1}. </span><span class="text-slate-900 dark:text-slate-100">${questionText}</span>`;
     
     // Show explanation if submitted
     if (submitted && explanationElRef.current) {
@@ -169,9 +169,9 @@ export default function ExamPage() {
         const correctAns = currentQuestion.answers.find(a => a.is_correct);
         const isCorrect = correctAns && Number(correctAns.id) === Number(answers[currentQuestion.id]);
         explanationElRef.current.innerHTML = `
-          <div class="mt-4 rounded-2xl border ${isCorrect ? 'border-blue-200 bg-blue-50' : 'border-red-200 bg-red-50'} p-4">
-            <p class="text-sm font-semibold ${isCorrect ? 'text-blue-700' : 'text-red-700'}">💡 Giải thích:</p>
-            <p class="mt-2 text-sm ${isCorrect ? 'text-blue-600' : 'text-red-600'} leading-relaxed">${explanationText}</p>
+          <div class="mt-4 rounded-2xl border ${isCorrect ? 'border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30' : 'border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/30'} p-4">
+            <p class="text-sm font-semibold ${isCorrect ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}">💡 Giải thích:</p>
+            <p class="mt-2 text-sm ${isCorrect ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'} leading-relaxed">${explanationText}</p>
           </div>
         `;
         explanationElRef.current.className = 'block';
@@ -194,27 +194,27 @@ export default function ExamPage() {
           const isCorrectAnswer = answer.is_correct;
           let bgClass, borderClass, textClass;
           if (isCorrectAnswer) {
-            bgClass = 'bg-blue-50';
-            borderClass = 'border-blue-400';
-            textClass = 'text-blue-800';
+            bgClass = 'bg-blue-50 dark:bg-blue-900/30';
+            borderClass = 'border-blue-400 dark:border-blue-600';
+            textClass = 'text-blue-800 dark:text-blue-200';
           } else if (isUserAnswer && !isCorrectAnswer) {
-            bgClass = 'bg-red-50';
-            borderClass = 'border-red-400';
-            textClass = 'text-red-800';
+            bgClass = 'bg-red-50 dark:bg-red-900/30';
+            borderClass = 'border-red-400 dark:border-red-600';
+            textClass = 'text-red-800 dark:text-red-200';
           } else {
-            bgClass = 'bg-white';
-            borderClass = 'border-slate-200';
-            textClass = 'text-slate-600';
+            bgClass = 'bg-white dark:bg-slate-700';
+            borderClass = 'border-slate-200 dark:border-slate-600';
+            textClass = 'text-slate-600 dark:text-slate-400';
           }
           const div = document.createElement('div');
           div.className = `flex items-center gap-3 rounded-3xl border ${borderClass} ${bgClass} p-4 ${textClass}`;
           const icon = document.createElement('span');
           if (isCorrectAnswer) {
             icon.textContent = '✓';
-            icon.className = 'text-blue-600 font-bold text-lg';
+            icon.className = 'text-blue-600 dark:text-blue-400 font-bold text-lg';
           } else if (isUserAnswer) {
             icon.textContent = '✗';
-            icon.className = 'text-red-600 font-bold text-lg';
+            icon.className = 'text-red-600 dark:text-red-400 font-bold text-lg';
           } else {
             icon.textContent = '';
             icon.className = 'w-5';
@@ -228,7 +228,7 @@ export default function ExamPage() {
         } else {
           // Before submit - selectable radio
           const label = document.createElement('label');
-          label.className = 'flex items-center gap-3 rounded-3xl border border-slate-200 bg-white p-4 cursor-pointer transition hover:border-sky-300 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50';
+          label.className = 'flex items-center gap-3 rounded-3xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 p-4 cursor-pointer transition hover:border-sky-300 dark:hover:border-sky-600 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50 dark:has-[:checked]:bg-sky-900/30';
           
           const input = document.createElement('input');
           input.type = 'radio';
@@ -239,7 +239,7 @@ export default function ExamPage() {
           input.disabled = submitted;
           
           const span = document.createElement('span');
-          span.className = 'text-slate-700';
+          span.className = 'text-slate-700 dark:text-slate-300';
           span.textContent = answer.answer_text;
           
           label.appendChild(input);
@@ -396,7 +396,6 @@ export default function ExamPage() {
               )}
           </div>
 
-          {/* Chú thích trạng thái sau khi nộp */}
           {submitted && (
           <div className="flex items-center gap-6 text-xs text-slate-500 dark:text-slate-400 px-2">
             <div className="flex items-center gap-2">
@@ -408,7 +407,7 @@ export default function ExamPage() {
               <span>Trả lời sai</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-slate-300"></span>
+              <span className="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600"></span>
               <span>Chưa trả lời</span>
             </div>
           </div>
