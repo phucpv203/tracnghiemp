@@ -14,8 +14,8 @@ import { apiService } from '../services/apiService';
 
 const TOPUP_PACKAGES = [
   { points: 100, label: '100 điểm', price: '100,000₫', amount: 100000 },
+  { points: 150, label: '150 điểm', price: '150,000₫', amount: 150000 },
   { points: 200, label: '200 điểm', price: '200,000₫', amount: 200000 },
-  { points: 300, label: '300 điểm', price: '300,000₫', amount: 300000 },
 ];
 
 /**
