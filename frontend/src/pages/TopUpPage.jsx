@@ -99,24 +99,24 @@ export default function TopUpPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-8 flex flex-col gap-4 rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">Nạp thêm điểm</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-900">Xin chào, {user?.name || user?.email}</h1>
-          <p className="mt-3 max-w-2xl text-sm text-slate-600">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Nạp thêm điểm</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">Xin chào, {user?.name || user?.email}</h1>
+          <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
             Chọn gói điểm để nạp vào tài khoản. <strong>NẾU GẶP VẤN ĐỀ KHI NẠP ĐIỂM LIÊN HỆ ZALO: 0966453217</strong> 
           </p>
         </div>
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/trang-chu')}
-            className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+            className="rounded-2xl bg-slate-100 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
           >
             ← Quay lại Trang chủ
           </button>
           <button
             onClick={onLogout}
-            className="self-start rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+            className="self-start rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600"
           >
             Đăng xuất
           </button>
@@ -127,13 +127,13 @@ export default function TopUpPage() {
         {TOPUP_PACKAGES.map((pkg) => (
           <div
             key={pkg.points}
-            className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm flex flex-col items-center text-center hover:shadow-md transition"
+            className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 shadow-sm dark:shadow-slate-700/30 flex flex-col items-center text-center hover:shadow-md transition"
           >
-            <div className="mb-4 rounded-full bg-amber-50 p-4">
+            <div className="mb-4 rounded-full bg-amber-50 dark:bg-amber-900/30 p-4">
               <span className="text-4xl">💰</span>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">{pkg.label}</h2>
-            <p className="mt-2 text-sm text-slate-500">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{pkg.label}</h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Nạp {pkg.points} điểm vào tài khoản
             </p>
             <p className="mt-1 text-lg font-semibold text-amber-600">{pkg.price}</p>

@@ -124,9 +124,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="flex justify-center items-center min-h-[400px]">
-          <div className="text-slate-600">Đang tải...</div>
+          <div className="text-slate-600 dark:text-slate-400">Đang tải...</div>
         </div>
       </main>
     );
@@ -134,24 +134,24 @@ export default function DashboardPage() {
   
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-8 flex flex-col gap-4 rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 sm:flex-row sm:items-center sm:justify-between">
         <div>
           
           
           {isAuthenticated ? (
             <>
-              <h1 className="mt-2 text-3xl font-semibold text-slate-900">Xin chào, {user?.name || user?.email}</h1>
-              <p className="mt-3 max-w-2xl text-sm text-slate-600">Chọn môn học để ôn tập hoặc thi thử.</p>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">Xin chào, {user?.name || user?.email}</h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">Chọn môn học để ôn tập hoặc thi thử.</p>
             </>
           ) : (
             <>
-              <h1 className="mt-2 text-3xl font-semibold text-slate-900">Hệ thống ôn thi trắc nghiệm</h1>
-              <p className="mt-3 max-w-2xl text-sm text-slate-600">Đăng nhập để bắt đầu ôn tập và thi thử các môn học.</p>
+              <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">Hệ thống ôn thi trắc nghiệm</h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">Đăng nhập để bắt đầu ôn tập và thi thử các môn học.</p>
             </>
           )}
           
           {isAuthenticated && user?.role === 'admin' && (
-            <Link to="/admin" className="mt-3 inline-flex rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+            <Link to="/admin" className="mt-3 inline-flex rounded-full bg-slate-900 dark:bg-slate-700 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600">
               Mở trang quản trị Admin
             </Link>
           )}
@@ -160,9 +160,9 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <>
-              <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-3 text-center relative">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">Điểm của bạn</p>
-                <p className="text-2xl font-bold text-amber-700">{userPoints}</p>
+              <div className="rounded-2xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 px-5 py-3 text-center relative">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400">Điểm của bạn</p>
+                <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{userPoints}</p>
                 <button
                   onClick={() => navigate('/topup')}
                   className="mt-2 w-full rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition"
@@ -170,7 +170,7 @@ export default function DashboardPage() {
                   + Nạp thêm điểm
                 </button>
               </div>
-              <button onClick={onLogout} className="self-start rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
+              <button onClick={onLogout} className="self-start rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600">
                 Đăng xuất
               </button>
             </>
@@ -178,13 +178,13 @@ export default function DashboardPage() {
             <>
               <Link
                 to="/login"
-                className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
               >
                 Đăng nhập
               </Link>
               <Link
                 to="/register"
-                className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+                className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600"
               >
                 Đăng ký
               </Link>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
             placeholder="Tìm kiếm môn học..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100"
+            className="w-full rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 py-3 pl-10 pr-4 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-700"
           />
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -220,8 +220,8 @@ export default function DashboardPage() {
       </div>
 
       {filteredCourses.length === 0 ? (
-        <div className="rounded-3xl bg-white p-8 text-center shadow-sm">
-          <p className="text-slate-600">
+        <div className="rounded-3xl bg-white dark:bg-slate-800 p-8 text-center shadow-sm dark:shadow-slate-700/30">
+          <p className="text-slate-600 dark:text-slate-400">
             {searchTerm.trim()
               ? `Không tìm thấy môn học "${searchTerm}".`
               : 'Chưa có khóa học nào. Vui lòng liên hệ admin để được cấp khóa học.'}
@@ -230,8 +230,8 @@ export default function DashboardPage() {
       ) : (
         <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-4">
           {filteredCourses.map((course) => (
-            <article key={course.id} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between gap-4">
-              <h2 className="text-xl font-semibold text-slate-900">{course.title}</h2>
+            <article key={course.id} className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 flex items-center justify-between gap-4">
+              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{course.title}</h2>
               
               {course.unlocked && isAuthenticated ? (
                 <div className="flex flex-shrink-0 gap-3">
@@ -250,9 +250,9 @@ export default function DashboardPage() {
                 </div>
               ) : isAuthenticated ? (
                 <div className="flex flex-shrink-0">
-                  {unlockingCourseId === course.id ? (
-                    <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-lg min-w-[240px] relative z-50">
-                      <p className="text-sm font-semibold text-slate-700 mb-3">
+                      {unlockingCourseId === course.id ? (
+                    <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 shadow-lg min-w-[240px] relative z-50">
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
                         Mở khóa "{course.title}" với <span className="text-amber-600">{course.requiredPoints} điểm</span>?
                       </p>
                       <div className="flex gap-2">
@@ -269,7 +269,7 @@ export default function DashboardPage() {
                         </button>
                         <button
                           onClick={() => setUnlockingCourseId(null)}
-                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                          className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
                         >
                           Hủy
                         </button>
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                       onClick={() => setUnlockingCourseId(course.id)}
                       onMouseEnter={(e) => { e.currentTarget.textContent = `Mở khóa (${course.requiredPoints}đ)`; }}
                       onMouseLeave={(e) => { e.currentTarget.textContent = `🔒 ${course.requiredPoints} điểm`; }}
-                      className="rounded-full bg-slate-100 border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 transition"
+                      className="rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-600 transition"
                     >
                       🔒 {course.requiredPoints} điểm
                     </button>
@@ -292,7 +292,7 @@ export default function DashboardPage() {
               ) : (
                 /* Chưa đăng nhập: hiển thị badge "Cần đăng nhập" */
                 <div className="flex flex-shrink-0">
-                  <span className="rounded-full bg-slate-100 border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-400">
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-semibold text-slate-400 dark:text-slate-500">
                     🔒 Cần đăng nhập
                   </span>
                 </div>

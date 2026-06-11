@@ -312,8 +312,8 @@ export default function ExamPage() {
     }
   }, [result]);
 
-  if (loading) return <div className="flex justify-center items-center min-h-screen">Đang tải...</div>;
-  if (!exam) return <div className="flex justify-center items-center min-h-screen">Không tìm thấy đề thi</div>;
+  if (loading) return <div className="flex justify-center items-center min-h-screen text-slate-600 dark:text-slate-400">Đang tải...</div>;
+  if (!exam) return <div className="flex justify-center items-center min-h-screen text-slate-600 dark:text-slate-400">Không tìm thấy đề thi</div>;
 
   
   function shuffleArray(arr) {
@@ -373,24 +373,24 @@ export default function ExamPage() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
-        <h1 className="text-3xl font-semibold text-slate-900">{exam.title}</h1>
-        <p className="mt-3 text-sm text-slate-600">Chuẩn bị sẵn sàng để hoàn thành bài thi thử với các câu hỏi trắc nghiệm.</p>
+      <div className="mb-8 rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30">
+        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{exam.title}</h1>
+        <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Chuẩn bị sẵn sàng để hoàn thành bài thi thử với các câu hỏi trắc nghiệm.</p>
       </div>
 
       <div className="space-y-6">
         <div className="flex justify-end">
-          <button onClick={() => navigate('/trang-chu')} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
+          <button onClick={() => navigate('/trang-chu')} className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600">
             Quay lại Trang chủ
           </button>
         </div>
-          <div id="result-panel" className="hidden rounded-3xl border border-amber-200 bg-amber-50 p-5 text-slate-900 shadow-sm" role="status">
-            <div className="text-lg font-semibold text-amber-900"><span id="result-title">Kết quả: </span><span id="result-score"></span></div>
-            <div id="result-details" className="mt-2 text-sm text-amber-900"></div>
+          <div id="result-panel" className="hidden rounded-3xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-5 text-slate-900 dark:text-slate-100 shadow-sm" role="status">
+            <div className="text-lg font-semibold text-amber-900 dark:text-amber-300"><span id="result-title">Kết quả: </span><span id="result-score"></span></div>
+            <div id="result-details" className="mt-2 text-sm text-amber-900 dark:text-amber-400"></div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-sky-200 bg-sky-50 p-4 sm:p-5">
-              <div className="text-base font-semibold text-red-600">Thời gian: <span ref={timerElRef} className="font-mono">45:00</span></div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-3xl border border-sky-200 dark:border-sky-700 bg-sky-50 dark:bg-sky-900/30 p-4 sm:p-5">
+              <div className="text-base font-semibold text-red-600 dark:text-red-400">Thời gian: <span ref={timerElRef} className="font-mono">45:00</span></div>
               {!submitted && (
                 <button onClick={handleSubmit} className="inline-flex items-center justify-center rounded-3xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/10 transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500">Nộp bài</button>
               )}
@@ -398,7 +398,7 @@ export default function ExamPage() {
 
           {/* Chú thích trạng thái sau khi nộp */}
           {submitted && (
-          <div className="flex items-center gap-6 text-xs text-slate-500 px-2">
+          <div className="flex items-center gap-6 text-xs text-slate-500 dark:text-slate-400 px-2">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-blue-500"></span>
               <span>Trả lời đúng</span>
@@ -414,20 +414,20 @@ export default function ExamPage() {
           </div>
           )}
 
-          <div id="question-list" className="overflow-x-auto rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div id="question-list" className="overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
             <div ref={questionListInnerRef} id="question-list-inner" className="min-w-[500px] flex flex-wrap items-center gap-3"></div>
-            <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-              <span className="font-semibold text-slate-600">Danh sách câu hỏi</span>
-              <span className="font-semibold text-slate-500">Câu <span ref={questionCountElRef} className="font-bold text-slate-900">1</span>/{questions.length}</span>
+            <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-600 dark:text-slate-400">Danh sách câu hỏi</span>
+              <span className="font-semibold text-slate-500 dark:text-slate-400">Câu <span ref={questionCountElRef} className="font-bold text-slate-900 dark:text-slate-100">1</span>/{questions.length}</span>
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_20px_80px_-40px_rgba(15,23,42,0.15)]">
-            <div ref={questionElRef} id="question" className="mb-5 text-lg font-semibold leading-8 text-slate-900" aria-live="polite"></div>
+          <div className="rounded-[28px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-[0_20px_80px_-40px_rgba(15,23,42,0.15)] dark:shadow-[0_20px_80px_-40px_rgba(0,0,0,0.5)]">
+            <div ref={questionElRef} id="question" className="mb-5 text-lg font-semibold leading-8 text-slate-900 dark:text-slate-100" aria-live="polite"></div>
             <div ref={answersElRef} id="answers" className="space-y-3"></div>
             <div ref={explanationElRef} id="explanation" className="hidden"></div>
             <div className="mt-8 flex flex-wrap items-center gap-2">
-              <button id="prev" className="inline-flex items-center justify-center rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">Câu trước</button>
+              <button id="prev" className="inline-flex items-center justify-center rounded-3xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500">Câu trước</button>
               <button id="next" className="inline-flex items-center justify-center rounded-3xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/10 transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500">Câu tiếp</button>
             </div>
           </div>

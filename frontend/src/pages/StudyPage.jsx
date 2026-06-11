@@ -269,7 +269,7 @@ export default function StudyPage() {
   }, [currentQuestionIndex, questions.length]);
 
   // ========== NOW IT'S SAFE TO DO EARLY RETURN ==========
-  if (!course) return <div className="flex justify-center items-center min-h-screen">Đang tải...</div>;
+  if (!course) return <div className="flex justify-center items-center min-h-screen text-slate-600 dark:text-slate-400">Đang tải...</div>;
 
   function shuffleArray(arr) {
     const shuffled = [...arr];
@@ -386,12 +386,12 @@ export default function StudyPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-8 flex items-center justify-between gap-4 rounded-3xl bg-white p-6 shadow-sm">
+      <div className="mb-8 flex items-center justify-between gap-4 rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30">
         <div>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-900">{course.title}</h1>
-          <p className="mt-2 text-sm text-slate-600">Ôn tập lại nội dung quan trọng và xem lại cấu trúc đề.</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{course.title}</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Ôn tập lại nội dung quan trọng và xem lại cấu trúc đề.</p>
         </div>
-        <button onClick={() => navigate('/trang-chu')} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
+        <button onClick={() => navigate('/trang-chu')} className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600">
           Quay lại Trang chủ
         </button>
       </div>
@@ -400,17 +400,17 @@ export default function StudyPage() {
         <div className="flex justify-end">
           <button 
             onClick={handleResetProgress}
-            className="rounded-3xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className="rounded-3xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500"
           >
             Xóa tiến độ
           </button>
         </div>
 
-        <div id="question-list" className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+        <div id="question-list" className="overflow-hidden rounded-[28px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
           <div id="question-list-inner" className="flex gap-2 overflow-x-auto pb-2"></div>
           
           {/* Chú thích trạng thái + số câu */}
-          <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+          <div className="mt-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-blue-500"></span>
@@ -425,17 +425,17 @@ export default function StudyPage() {
                 <span>Chưa trả lời</span>
               </div>
             </div>
-            <span className="font-semibold text-slate-600">Câu <span className="font-bold text-slate-900">{currentQuestionIndex + 1}</span>/{questions.length}</span>
+            <span className="font-semibold text-slate-600 dark:text-slate-400">Câu <span className="font-bold text-slate-900 dark:text-slate-100">{currentQuestionIndex + 1}</span>/{questions.length}</span>
           </div>
         </div>
 
-        <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-[0_24px_100px_-48px_rgba(15,23,42,0.25)]">
-          <div id="question" className="mb-6 text-lg font-semibold leading-8 text-slate-900" aria-live="polite"></div>
+        <div className="rounded-[32px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 shadow-[0_24px_100px_-48px_rgba(15,23,42,0.25)] dark:shadow-[0_24px_100px_-48px_rgba(0,0,0,0.5)]">
+          <div id="question" className="mb-6 text-lg font-semibold leading-8 text-slate-900 dark:text-slate-100" aria-live="polite"></div>
           <div id="answers" className="space-y-3"></div>
           <div id="explanation" className="hidden"></div>
           
           <div className="mt-8 flex flex-wrap items-center gap-2">
-            <button id="prev" className="inline-flex items-center justify-center rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500">Câu trước</button>
+            <button id="prev" className="inline-flex items-center justify-center rounded-3xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-200 transition hover:bg-slate-100 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500">Câu trước</button>
             <button id="next" className="inline-flex items-center justify-center rounded-3xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/10 transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500">Câu tiếp</button>
             {showExplanation && (
               <button
@@ -445,7 +445,7 @@ export default function StudyPage() {
                 Câu tiếp theo →
               </button>
             )}
-            <div id="result" className="mt-2 text-sm font-semibold text-slate-700 sm:mt-0 sm:ml-auto"></div>
+            <div id="result" className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-300 sm:mt-0 sm:ml-auto"></div>
           </div>
         </div>
       </div>

@@ -82,17 +82,17 @@ export default function AdminCourses() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Quản lý môn học & câu hỏi</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Quản lý môn học & câu hỏi</h1>
         <div className="flex items-center gap-3">
           <Link
             to="/trang-chu"
-            className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+            className="rounded-2xl bg-slate-100 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
           >
             ← Quay lại Trang chủ
           </Link>
           <button
             onClick={onLogout}
-            className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+            className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600"
           >
             Đăng xuất
           </button>
@@ -100,8 +100,8 @@ export default function AdminCourses() {
       </div>
 
       <div className="mt-6 space-y-4">
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <h3 className="font-semibold">Thêm môn học mới</h3>
+        <div className="rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100">Thêm môn học mới</h3>
           <input className="mt-3 w-full px-3 py-2" placeholder="Tiêu đề" value={newCourse.title} onChange={(e) => setNewCourse((s) => ({ ...s, title: e.target.value }))} />
           <input
             type="number"
@@ -113,9 +113,9 @@ export default function AdminCourses() {
           <button className="mt-3 rounded-md bg-emerald-600 px-4 py-2 text-white" onClick={create}>Tạo môn học</button>
         </div>
 
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <h3 className="font-semibold">Import câu hỏi từ file JSON</h3>
-          <p className="mt-2 text-sm text-slate-600">File JSON có thể là một object hoặc mảng object với các trường: question, answers, correct, explanation.</p>
+        <div className="rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100">Import câu hỏi từ file JSON</h3>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">File JSON có thể là một object hoặc mảng object với các trường: question, answers, correct, explanation.</p>
           <select
             value={uploadCourseId}
             onChange={(e) => setUploadCourseId(e.target.value)}
@@ -134,7 +134,7 @@ export default function AdminCourses() {
             onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
           />
           <button className="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-white" onClick={importQuestions}>Import câu hỏi</button>
-          {importMessage && <p className="mt-3 text-sm text-slate-700">{importMessage}</p>}
+          {importMessage && <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">{importMessage}</p>}
         </div>
 
         {/* Search bar */}
@@ -144,28 +144,28 @@ export default function AdminCourses() {
             placeholder="Tìm kiếm môn học theo tên..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-slate-400 focus:outline-none"
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-slate-400 focus:outline-none"
           />
         </div>
 
         {courses.map((c) => (
-          <div key={c.id} className="rounded-xl bg-white p-4 shadow-sm">
+          <div key={c.id} className="rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">{c.title}</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{c.title}</h3>
               <button
                 onClick={() => handleDeleteCourse(c.id, c.title)}
                 disabled={deletingCourseId === c.id}
-                className="rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-slate-300"
+                className="rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-slate-300 dark:disabled:bg-slate-600"
               >
                 {deletingCourseId === c.id ? 'Đang xoá...' : 'Xoá'}
               </button>
             </div>
-            <input id={`title-${c.id}`} defaultValue={c.title} className="mt-2 w-full px-3 py-2" />
+            <input id={`title-${c.id}`} defaultValue={c.title} className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600" />
             <input
               id={`required-${c.id}`}
               type="number"
               defaultValue={c.requiredScore || 0}
-              className="mt-2 w-full px-3 py-2"
+              className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
               placeholder="Điểm mở khóa"
             />
             <div className="mt-3 flex gap-2">

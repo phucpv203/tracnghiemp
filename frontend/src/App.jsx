@@ -8,7 +8,7 @@
  * 2. 1 tài khoản 1 thiết bị: polling /auth/me mỗi 30 giây.
  *    Nếu backend trả 401 với code=SESSION_REPLACED → user bị đá ra.
  */
-import { useState, useEffect, createContext, useRef } from 'react';
+import { useState, useEffect, createContext, useRef, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -26,14 +26,34 @@ import { authService } from './services/authService';
 import { apiService, setOnUnauthorized } from './services/apiService';
 
 export const AuthContext = createContext(null);
+export const ThemeContext = createContext({ dark: false, toggleTheme: () => {} });
 
 const POLL_INTERVAL_MS = 30 * 1000; // 30 giây
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [dark, setDark] = useState(() => {
+    // Mặc định sáng, chỉ chuyển sang tối khi người dùng chủ động bật
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return false; // mặc định là sáng
+  });
   const navigate = useNavigate();
   const pollRef = useRef(null);
+
+  const toggleTheme = useCallback(() => {
+    setDark(prev => {
+      const next = !prev;
+      localStorage.setItem('theme', next ? 'dark' : 'light');
+      return next;
+    });
+  }, []);
+
+  // Apply/remove dark class on <html>
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+  }, [dark]);
 
   // Verify token khi app mount
   useEffect(() => {
@@ -124,8 +144,9 @@ function App() {
 
   return (
     <AuthContext.Provider value={{ user, onLogin, onLogout }}>
-      <div className="min-h-screen bg-slate-50 text-slate-900">
-        <Routes>
+      <ThemeContext.Provider value={{ dark, toggleTheme }}>
+        <div className="min-h-screen bg-stone-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+          <Routes>
           <Route path="/login" element={user ? <Navigate to="/trang-chu" replace /> : <LoginPage />} />
           <Route path="/register" element={user ? <Navigate to="/trang-chu" replace /> : <RegisterPage />} />
           <Route path="/trang-chu" element={<DashboardPage />} />
@@ -187,7 +208,25 @@ function App() {
           />
           <Route path="*" element={<Navigate to="/trang-chu" replace />} />
         </Routes>
+
+        {/* Floating theme toggle button */}
+        <button
+          onClick={toggleTheme}
+          aria-label={dark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+          className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-slate-700 shadow-lg border border-slate-200 dark:border-slate-600 hover:shadow-xl transition-all duration-200 hover:scale-110"
+        >
+          {dark ? (
+            <svg className="h-6 w-6 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            <svg className="h-6 w-6 text-slate-700" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+            </svg>
+          )}
+        </button>
       </div>
+      </ThemeContext.Provider>
     </AuthContext.Provider>
   );
 }

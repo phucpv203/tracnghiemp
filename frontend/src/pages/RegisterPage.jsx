@@ -22,21 +22,21 @@ export default function RegisterPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12 sm:px-6">
-      <div className="w-full rounded-3xl bg-white p-8 shadow-xl sm:p-10">
-        <h1 className="text-3xl font-semibold text-slate-900">Đăng ký</h1>
-        <p className="mt-2 text-sm text-slate-600">Tạo tài khoản mới để bắt đầu ôn luyện.</p>
+      <div className="w-full rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10">
+        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Đăng ký</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Tạo tài khoản mới để bắt đầu ôn luyện.</p>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <label className="block text-sm font-medium text-slate-700">Họ và tên</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Họ và tên</label>
             <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full" />
           </div>
           <div className="space-y-4">
-            <label className="block text-sm font-medium text-slate-700">Email</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full" />
           </div>
           <div className="space-y-4">
-            <label className="block text-sm font-medium text-slate-700">Mật khẩu</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Mật khẩu</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full" />
           </div>
 
@@ -47,12 +47,12 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Đã có tài khoản?{' '}
-          <Link to="/login" className="font-semibold text-slate-900 hover:text-slate-700">
-            Đăng nhập
-          </Link>
-        </p>
+          <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
+            Đã có tài khoản?{' '}
+            <Link to="/login" className="font-semibold text-slate-900 dark:text-slate-100 hover:text-slate-700 dark:hover:text-slate-300">
+              Đăng nhập
+            </Link>
+          </p>
       </div>
     </div>
   );

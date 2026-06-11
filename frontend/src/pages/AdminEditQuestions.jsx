@@ -119,23 +119,23 @@ export default function AdminEditQuestions() {
     <main className="mx-auto max-w-6xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
             {course ? `Chỉnh sửa câu hỏi: ${course.title}` : 'Đang tải...'}
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Danh sách câu hỏi - Bấm "Sửa" để chỉnh sửa nội dung và đáp án.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             to="/admin/courses"
-            className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+            className="rounded-2xl bg-slate-100 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
           >
             ← Quay lại Môn học
           </Link>
           <button
             onClick={onLogout}
-            className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+            className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600"
           >
             Đăng xuất
           </button>
@@ -149,12 +149,12 @@ export default function AdminEditQuestions() {
           placeholder="Tìm kiếm câu hỏi..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-slate-400 focus:outline-none"
+          className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-slate-400 focus:outline-none"
         />
       </div>
 
       {/* Questions count */}
-      <div className="mb-4 text-sm text-slate-500">
+      <div className="mb-4 text-sm text-slate-500 dark:text-slate-400">
         {filteredQuestions.length} / {questions.length} câu hỏi
         {searchTerm.trim() && ` (kết quả tìm kiếm cho "${searchTerm}")`}
       </div>
@@ -164,20 +164,20 @@ export default function AdminEditQuestions() {
         {filteredQuestions.map((q, idx) => (
           <div
             key={q.id}
-            className="rounded-xl bg-white p-5 shadow-sm transition-all"
+            className="rounded-xl bg-white dark:bg-slate-800 p-5 shadow-sm dark:shadow-slate-700/30 transition-all"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <span className="mr-2 rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
+                <span className="mr-2 rounded-md bg-slate-100 dark:bg-slate-700 px-2 py-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
                   #{idx + 1}
                 </span>
-                <span className="text-slate-800">{q.content}</span>
+                <span className="text-slate-800 dark:text-slate-200">{q.content}</span>
               </div>
               <button
                 onClick={() => handleEditClick(q)}
                 className={`shrink-0 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
                   expandedId === q.id
-                    ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    ? 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500'
                     : 'bg-sky-600 text-white hover:bg-sky-700'
                 }`}
               >
@@ -187,9 +187,9 @@ export default function AdminEditQuestions() {
 
             {/* Expanded edit form */}
             {expandedId === q.id && (
-              <div className="mt-5 border-t border-slate-100 pt-5">
+              <div className="mt-5 border-t border-slate-100 dark:border-slate-700 pt-5">
                 <div className="mb-4">
-                  <label className="mb-1 block text-sm font-semibold text-slate-700">
+                  <label className="mb-1 block text-sm font-semibold text-slate-700 dark:text-slate-300">
                     Nội dung câu hỏi
                   </label>
                   <textarea
@@ -198,13 +198,13 @@ export default function AdminEditQuestions() {
                       setEditForm((prev) => ({ ...prev, content: e.target.value }))
                     }
                     rows={3}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 focus:border-sky-400 focus:outline-none"
                   />
                 </div>
 
                 <div className="mb-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <label className="text-sm font-semibold text-slate-700">
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                       Câu trả lời
                     </label>
                     <button
@@ -231,11 +231,11 @@ export default function AdminEditQuestions() {
                           value={answer}
                           onChange={(e) => handleAnswerChange(i, e.target.value)}
                           placeholder={`Đáp án ${i + 1}`}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-sky-400 focus:outline-none"
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-200 focus:border-sky-400 focus:outline-none"
                         />
                         <button
                           onClick={() => handleRemoveAnswer(i)}
-                          className="shrink-0 rounded-md bg-red-500 px-2 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:bg-slate-200"
+                          className="shrink-0 rounded-md bg-red-500 px-2 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:bg-slate-200 dark:disabled:bg-slate-600"
                           disabled={editForm.answers.length <= 2}
                           title={
                             editForm.answers.length <= 2
@@ -246,7 +246,7 @@ export default function AdminEditQuestions() {
                           ✕
                         </button>
                         {editForm.correct === i && (
-                          <span className="shrink-0 text-xs font-semibold text-emerald-600">
+                          <span className="shrink-0 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                             ✅ Đúng
                           </span>
                         )}
@@ -258,7 +258,7 @@ export default function AdminEditQuestions() {
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setExpandedId(null)}
-                    className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                    className="rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600"
                   >
                     Hủy
                   </button>
@@ -276,7 +276,7 @@ export default function AdminEditQuestions() {
         ))}
 
         {filteredQuestions.length === 0 && (
-          <div className="rounded-xl bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
+          <div className="rounded-xl bg-white dark:bg-slate-800 p-8 text-center text-sm text-slate-500 dark:text-slate-400 shadow-sm dark:shadow-slate-700/30">
             {searchTerm.trim()
               ? 'Không tìm thấy câu hỏi phù hợp.'
               : 'Chưa có câu hỏi nào cho môn học này.'}
