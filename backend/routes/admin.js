@@ -15,6 +15,7 @@ import {
   updateQuestion,
   updateUserProgress,
   importQuestions,
+  deleteAllQuestionsByCourse,
 } from '../services/adminService.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
@@ -158,6 +159,16 @@ router.put('/questions/:id', async (req, res) => {
     const q = await updateQuestion(req.params.id, req.body);
     if (!q) return res.status(404).json({ message: 'Question not found' });
     res.json({ question: q });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.delete('/courses/:courseId/questions', async (req, res) => {
+  try {
+    const result = await deleteAllQuestionsByCourse(req.params.courseId);
+    if (!result) return res.status(404).json({ message: 'Course not found' });
+    res.json({ message: 'Đã xoá toàn bộ câu hỏi của môn học.', result });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

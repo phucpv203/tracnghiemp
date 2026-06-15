@@ -173,6 +173,20 @@ export async function updateCourse(id, data) {
   return result.rows[0];
 }
 
+export async function deleteAllQuestionsByCourse(courseId) {
+  const courseIdNum = Number(courseId);
+  
+  // Kiểm tra course tồn tại
+  const existing = await query('SELECT id, title FROM courses WHERE id = $1', [courseIdNum]);
+  if (!existing.rows.length) return null;
+
+  // Xoá answers → questions
+  await query('DELETE FROM answers WHERE question_id IN (SELECT id FROM questions WHERE course_id = $1)', [courseIdNum]);
+  await query('DELETE FROM questions WHERE course_id = $1', [courseIdNum]);
+
+  return { courseId: courseIdNum, deleted: true };
+}
+
 export async function deleteCourse(id) {
   const courseId = Number(id);
 

@@ -116,6 +116,7 @@ export const apiService = {
   updateQuestion: (id, data) => request(`/admin/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   importQuestions: (courseId, questions) =>
     request('/admin/questions/import', { method: 'POST', body: JSON.stringify({ courseId, questions }) }),
+  deleteAllQuestions: (courseId) => request(`/admin/courses/${courseId}/questions`, { method: 'DELETE' }),
   updateUserPassword: (id, password) =>
     request(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify({ password }) }),
   updateUserPoints: (id, points) =>

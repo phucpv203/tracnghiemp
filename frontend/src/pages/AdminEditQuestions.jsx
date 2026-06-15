@@ -10,6 +10,7 @@ export default function AdminEditQuestions() {
   const [questions, setQuestions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedId, setExpandedId] = useState(null); // question id being edited
+  const [deletingAll, setDeletingAll] = useState(false);
   const [editForm, setEditForm] = useState({ content: '', answers: [], correct: 0 });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -142,15 +143,34 @@ export default function AdminEditQuestions() {
         </div>
       </div>
 
-      {/* Search bar */}
-      <div className="mb-4">
+      {/* Actions bar */}
+      <div className="mb-4 flex items-center gap-3">
         <input
           type="text"
           placeholder="Tìm kiếm câu hỏi..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-slate-400 focus:outline-none"
+          className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-slate-400 focus:outline-none"
         />
+        <button
+          onClick={async () => {
+            if (!window.confirm(`Bạn có chắc chắn muốn xoá toàn bộ ${questions.length} câu hỏi của môn học này? Hành động này không thể hoàn tác!`)) return;
+            setDeletingAll(true);
+            try {
+              await apiService.deleteAllQuestions(courseId);
+              showToast(`Đã xoá toàn bộ ${questions.length} câu hỏi.`, 'success');
+              setQuestions([]);
+            } catch (err) {
+              showToast('Lỗi khi xoá: ' + err.message, 'error');
+            } finally {
+              setDeletingAll(false);
+            }
+          }}
+          disabled={deletingAll || questions.length === 0}
+          className="shrink-0 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 transition"
+        >
+          {deletingAll ? 'Đang xoá...' : `Xoá toàn bộ (${questions.length})`}
+        </button>
       </div>
 
       {/* Questions count */}
