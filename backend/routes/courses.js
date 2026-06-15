@@ -31,6 +31,45 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /courses/:id/preview
+ * Lấy 20 câu hỏi đầu tiên cho guest dùng thử (không cần đăng nhập)
+ * 
+ * Response:
+ * {
+ *   course: {
+ *     id: number,
+ *     title: string,
+ *     description: string,
+ *     questions: Array<{id, content, answers: Array<{id, answer_text, is_correct}>}>
+ *   }
+ * }
+ */
+router.get('/:id/preview', async (req, res) => {
+  try {
+    const result = await query('SELECT * FROM courses WHERE id = $1', [Number(req.params.id)]);
+    if (!result.rows.length) {
+      return res.status(404).json({ message: 'Không tìm thấy môn học.' });
+    }
+    const course = result.rows[0];
+    
+    // Lấy 20 câu hỏi đầu tiên
+    const questions = await getQuestionsWithAnswers(course.id);
+    const previewQuestions = questions.slice(0, 20);
+    
+    res.json({ 
+      course: {
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        questions: previewQuestions
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
  * GET /courses/:id
  * Lấy thông tin chi tiết của một khóa học, bao gồm danh sách câu hỏi
  * 

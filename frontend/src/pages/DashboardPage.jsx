@@ -296,8 +296,14 @@ export default function DashboardPage() {
                   )}
                 </div>
               ) : (
-                /* Chưa đăng nhập: hiển thị badge "Cần đăng nhập" */
-                <div className="flex flex-shrink-0">
+                /* Chưa đăng nhập: hiển thị badge + nút dùng thử */
+                <div className="flex flex-shrink-0 gap-2">
+                  <button
+                    onClick={() => navigate(`/preview/${course.id}`)}
+                    className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition"
+                  >
+                    Dùng thử
+                  </button>
                   <span className="rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-semibold text-slate-400 dark:text-slate-500">
                     🔒 Cần đăng nhập
                   </span>

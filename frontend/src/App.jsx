@@ -14,6 +14,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import StudyPage from './pages/StudyPage';
+import GuestStudyPage from './pages/GuestStudyPage';
 import TopUpPage from './pages/TopUpPage';
 import ExamPage from './pages/ExamPage';
 import AdminDashboard from './pages/AdminDashboard';
@@ -150,6 +151,7 @@ function App() {
           <Route path="/login" element={user ? <Navigate to="/trang-chu" replace /> : <LoginPage />} />
           <Route path="/register" element={user ? <Navigate to="/trang-chu" replace /> : <RegisterPage />} />
           <Route path="/trang-chu" element={<DashboardPage />} />
+          <Route path="/preview/:courseId" element={<GuestStudyPage />} />
           <Route
             path="/admin"
             element={

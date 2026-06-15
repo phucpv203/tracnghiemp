@@ -79,6 +79,7 @@ export const apiService = {
   // ===== Courses =====
   getCourses: () => request('/courses'),
   getCourseDetail: (courseId) => request(`/courses/${courseId}`),
+  getCoursePreview: (courseId) => request(`/courses/${courseId}/preview`),
 
   // ===== Progress =====
   getProgress: () => request('/progress'),
