@@ -420,6 +420,9 @@ export default function StudyPage() {
       <div className="mb-8 flex items-center justify-between gap-4 rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30">
         <div>
           <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{course.title}</h1>
+          {course.description && (
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{course.description}</p>
+          )}
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Ôn tập lại nội dung quan trọng và xem lại cấu trúc đề.</p>
         </div>
         <button onClick={() => navigate('/trang-chu')} className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600">

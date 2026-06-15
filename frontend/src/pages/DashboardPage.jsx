@@ -70,6 +70,7 @@ export default function DashboardPage() {
       return {
         id: course.id,
         title: course.title,
+        description: course.description || '',
         unlocked: isUnlocked,
         requiredPoints
       };
@@ -231,7 +232,12 @@ export default function DashboardPage() {
         <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-4">
           {filteredCourses.map((course) => (
             <article key={course.id} className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 flex items-center justify-between gap-4">
-              <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{course.title}</h2>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{course.title}</h2>
+                {course.description && (
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{course.description}</p>
+                )}
+              </div>
               
               {course.unlocked && isAuthenticated ? (
                 <div className="flex flex-shrink-0 gap-3">

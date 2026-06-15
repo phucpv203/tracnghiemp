@@ -95,6 +95,7 @@ router.get('/:id/study', async (req, res) => {
       course: {
         id: course.id,
         title: course.title,
+        description: course.description,
         questions: questions
       }
     });

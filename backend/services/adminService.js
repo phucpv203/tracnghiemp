@@ -138,9 +138,10 @@ export async function listCourses() {
 export async function createCourse(data) {
   const slug = data.slug || slugify(data.title);
   const required_points = Number(data.requiredScore || 0);
+  const description = data.description || '';
   const result = await query(
-    'INSERT INTO courses(title, slug, required_points) VALUES ($1, $2, $3) RETURNING *',
-    [data.title, slug, required_points]
+    'INSERT INTO courses(title, slug, description, required_points) VALUES ($1, $2, $3, $4) RETURNING *',
+    [data.title, slug, description, required_points]
   );
   return result.rows[0];
 }
@@ -153,6 +154,10 @@ export async function updateCourse(id, data) {
   if (data.title !== undefined) {
     updates.push(`title = $${index++}`);
     values.push(data.title);
+  }
+  if (data.description !== undefined) {
+    updates.push(`description = $${index++}`);
+    values.push(data.description);
   }
   if (data.requiredScore !== undefined) {
     updates.push(`required_points = $${index++}`);

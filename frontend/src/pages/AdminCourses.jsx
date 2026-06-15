@@ -8,7 +8,7 @@ export default function AdminCourses() {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newCourse, setNewCourse] = useState({ title: '', requiredScore: 0 });
+  const [newCourse, setNewCourse] = useState({ title: '', description: '', requiredScore: 0 });
   const [uploadCourseId, setUploadCourseId] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [importMessage, setImportMessage] = useState('');
@@ -32,13 +32,14 @@ export default function AdminCourses() {
   const create = async () => {
     const res = await apiService.createCourse(newCourse);
     setCourses((s) => [...s, res.course]);
-    setNewCourse({ title: '', requiredScore: 0 });
+    setNewCourse({ title: '', description: '', requiredScore: 0 });
   };
 
   const update = async (id) => {
     const title = document.getElementById(`title-${id}`).value;
+    const description = document.getElementById(`description-${id}`).value;
     const requiredScore = Number(document.getElementById(`required-${id}`).value);
-    const res = await apiService.updateCourse(id, { title, requiredScore });
+    const res = await apiService.updateCourse(id, { title, description, requiredScore });
     setCourses((s) => s.map((c) => (c.id === id ? res.course : c)));
   };
 
@@ -103,6 +104,13 @@ export default function AdminCourses() {
         <div className="rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
           <h3 className="font-semibold text-slate-900 dark:text-slate-100">Thêm môn học mới</h3>
           <input className="mt-3 w-full px-3 py-2" placeholder="Tiêu đề" value={newCourse.title} onChange={(e) => setNewCourse((s) => ({ ...s, title: e.target.value }))} />
+          <textarea
+            className="mt-3 w-full px-3 py-2"
+            placeholder="Mô tả môn học"
+            rows="2"
+            value={newCourse.description}
+            onChange={(e) => setNewCourse((s) => ({ ...s, description: e.target.value }))}
+          />
           <input
             type="number"
             className="mt-3 w-full px-3 py-2"
@@ -161,6 +169,13 @@ export default function AdminCourses() {
               </button>
             </div>
             <input id={`title-${c.id}`} defaultValue={c.title} className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600" />
+            <textarea
+              id={`description-${c.id}`}
+              defaultValue={c.description || ''}
+              className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
+              placeholder="Mô tả môn học"
+              rows="2"
+            />
             <input
               id={`required-${c.id}`}
               type="number"
