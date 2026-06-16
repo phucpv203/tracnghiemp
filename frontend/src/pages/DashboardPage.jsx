@@ -231,79 +231,89 @@ export default function DashboardPage() {
       ) : (
         <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-4">
           {filteredCourses.map((course) => (
-            <article key={course.id} className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 flex items-center justify-between gap-4">
-              <div className="flex-1 min-w-0">
+            <article key={course.id} className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30">
+              <div className="flex-1 min-w-0 mb-4">
                 <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{course.title}</h2>
                 {course.description && (
                   <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{course.description}</p>
                 )}
               </div>
               
-              {course.unlocked && isAuthenticated ? (
-                <div className="flex flex-shrink-0 gap-3">
-                  <button
-                    onClick={() => navigate(`/study/${course.id}`)}
-                    className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
-                  >
-                    Ôn tập
-                  </button>
-                  <button
-                    onClick={() => navigate(`/exam/${course.id}`)}
-                    className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-                  >
-                    Thi thử
-                  </button>
-                </div>
-              ) : isAuthenticated ? (
-                <div className="flex flex-shrink-0">
-                      {unlockingCourseId === course.id ? (
-                    <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 shadow-lg min-w-[240px] relative z-50">
-                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                        Mở khóa "{course.title}" với <span className="text-amber-600">{course.requiredPoints} điểm</span>?
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleUnlock(course.id)}
-                          disabled={unlockingLoading || userPoints < course.requiredPoints}
-                          className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-white ${
-                            userPoints < course.requiredPoints
-                              ? 'bg-slate-300 cursor-not-allowed'
-                              : 'bg-amber-600 hover:bg-amber-700'
-                          }`}
-                        >
-                          {unlockingLoading ? 'Đang mở...' : 'Mở khóa'}
-                        </button>
-                        <button
-                          onClick={() => setUnlockingCourseId(null)}
-                          className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
-                        >
-                          Hủy
-                        </button>
-                      </div>
-                      {userPoints < course.requiredPoints && (
-                        <p className="mt-2 text-xs text-red-500">Không đủ điểm (cần {course.requiredPoints})</p>
-                      )}
-                    </div>
-                  ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                {course.unlocked && isAuthenticated ? (
+                  <div className="flex gap-3">
                     <button
-                      onClick={() => setUnlockingCourseId(course.id)}
-                      onMouseEnter={(e) => { e.currentTarget.textContent = `Mở khóa (${course.requiredPoints}đ)`; }}
-                      onMouseLeave={(e) => { e.currentTarget.textContent = `🔒 ${course.requiredPoints} điểm`; }}
-                      className="rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-600 transition"
+                      onClick={() => navigate(`/study/${course.id}`)}
+                      className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
                     >
-                      🔒 {course.requiredPoints} điểm
+                      Ôn tập
                     </button>
-                  )}
-                </div>
-              ) : (
-                /* Chưa đăng nhập: chỉ hiển thị nút dùng thử */
-                <button
-                  onClick={() => navigate(`/preview/${course.id}`)}
-                  className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition flex-shrink-0"
-                >
-                  Dùng thử
-                </button>
-              )}
+                    <button
+                      onClick={() => navigate(`/exam/${course.id}`)}
+                      className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                    >
+                      Thi thử
+                    </button>
+                  </div>
+                ) : isAuthenticated ? (
+                  <div className="flex flex-wrap items-center gap-3">
+                    {unlockingCourseId === course.id ? (
+                      <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 shadow-lg min-w-[240px] relative z-50">
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                          Mở khóa "{course.title}" với <span className="text-amber-600">{course.requiredPoints} điểm</span>?
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleUnlock(course.id)}
+                            disabled={unlockingLoading || userPoints < course.requiredPoints}
+                            className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-white ${
+                              userPoints < course.requiredPoints
+                                ? 'bg-slate-300 cursor-not-allowed'
+                                : 'bg-amber-600 hover:bg-amber-700'
+                            }`}
+                          >
+                            {unlockingLoading ? 'Đang mở...' : 'Mở khóa'}
+                          </button>
+                          <button
+                            onClick={() => setUnlockingCourseId(null)}
+                            className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
+                          >
+                            Hủy
+                          </button>
+                        </div>
+                        {userPoints < course.requiredPoints && (
+                          <p className="mt-2 text-xs text-red-500">Không đủ điểm (cần {course.requiredPoints})</p>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => setUnlockingCourseId(course.id)}
+                          onMouseEnter={(e) => { e.currentTarget.textContent = `Mở khóa (${course.requiredPoints}đ)`; }}
+                          onMouseLeave={(e) => { e.currentTarget.textContent = `🔒 ${course.requiredPoints} điểm`; }}
+                          className="rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-600 transition"
+                        >
+                          🔒 {course.requiredPoints} điểm
+                        </button>
+                        <button
+                          onClick={() => navigate(`/preview/${course.id}`)}
+                          className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition"
+                        >
+                          Dùng thử
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  /* Chưa đăng nhập: chỉ hiển thị nút dùng thử */
+                  <button
+                    onClick={() => navigate(`/preview/${course.id}`)}
+                    className="rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition"
+                  >
+                    Dùng thử
+                  </button>
+                )}
+              </div>
             </article>
           ))}
         </div>
