@@ -8,12 +8,15 @@
  * - Thêm banner kêu gọi đăng ký ở cuối
  */
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
+import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
 
 export default function GuestStudyPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  const isAuthenticated = !!user;
   
   const [course, setCourse] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -349,9 +352,11 @@ export default function GuestStudyPage() {
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Dùng thử {questions.length} câu hỏi đầu tiên</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => navigate('/login')} className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600">
-            Đăng nhập
-          </button>
+          {!isAuthenticated && (
+            <button onClick={() => navigate('/login')} className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600">
+              Đăng nhập
+            </button>
+          )}
           <button onClick={() => navigate('/trang-chu')} className="rounded-2xl bg-slate-100 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600">
             ← Quay lại
           </button>
@@ -359,14 +364,16 @@ export default function GuestStudyPage() {
       </div>
 
       <div className="space-y-6">
-        <div className="flex justify-end">
-          <button 
-            onClick={() => navigate('/register')}
-            className="rounded-3xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/10 transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            Đăng ký để học toàn bộ
-          </button>
-        </div>
+        {!isAuthenticated && (
+          <div className="flex justify-end">
+            <button 
+              onClick={() => navigate('/register')}
+              className="rounded-3xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/10 transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              Đăng ký để học toàn bộ
+            </button>
+          </div>
+        )}
 
         {/* Question list */}
         <div className="overflow-hidden rounded-[28px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
@@ -413,8 +420,8 @@ export default function GuestStudyPage() {
         </div>
       </div>
 
-      {/* Call-to-action banner khi đã học xong câu cuối */}
-      {currentQuestionIndex === questions.length - 1 && showExplanation && (
+      {/* Call-to-action banner khi đã học xong câu cuối (chỉ hiển thị với guest chưa đăng nhập) */}
+      {!isAuthenticated && currentQuestionIndex === questions.length - 1 && showExplanation && (
         <div className="mt-8 rounded-3xl bg-gradient-to-r from-sky-500 to-blue-600 p-8 text-white shadow-lg">
           <h2 className="text-2xl font-bold">Bạn muốn học toàn bộ môn học?</h2>
           <p className="mt-2 text-blue-100">Đăng nhập hoặc đăng ký để truy cập đầy đủ câu hỏi, thi thử và theo dõi tiến độ học tập.</p>
