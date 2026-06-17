@@ -13,9 +13,9 @@ import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
 
 const TOPUP_PACKAGES = [
+  { points: 50, label: '50 điểm', price: '50,000₫', amount: 50000 },
   { points: 100, label: '100 điểm', price: '100,000₫', amount: 100000 },
   { points: 150, label: '150 điểm', price: '150,000₫', amount: 150000 },
-  { points: 200, label: '200 điểm', price: '200,000₫', amount: 200000 },
 ];
 
 /**
