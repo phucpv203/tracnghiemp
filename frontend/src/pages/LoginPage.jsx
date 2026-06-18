@@ -9,11 +9,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [deviceConflict, setDeviceConflict] = useState(null);
-  const [replacing, setReplacing] = useState(false);
-  const [emailNotVerified, setEmailNotVerified] = useState(null); // { email }
+  const [emailNotVerified, setEmailNotVerified] = useState(null);
   const { onLogin } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // --- Hàm parse tên thiết bị từ message ---
+  function extractDeviceName(message) {
+    const match = message.match(/đang được dùng trên "([^"]+)"/);
+    return match ? match[1] : 'thiết bị khác';
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -28,9 +32,12 @@ export default function LoginPage() {
       const response = await apiService.login({ email, password, deviceId, deviceName });
       onLogin(response.user, response.token);
     } catch (err) {
-      // Kiểm tra nếu là lỗi DEVICE_CONFLICT (status 409)
+      // Nếu conflict thiết bị → chuyển sang trang OTP đổi thiết bị
       if (err.message && err.message.includes('Tài khoản đang được dùng trên')) {
-        setDeviceConflict({ existingDevice: { deviceName: extractDeviceName(err.message) }, email, password });
+        const existingDeviceName = extractDeviceName(err.message);
+        navigate('/device-change-otp', {
+          state: { email, password, existingDeviceName }
+        });
       } else if (err.message && err.message.includes('Email chưa được xác thực')) {
         setEmailNotVerified({ email });
         setError('Email chưa được xác thực. Vui lòng kiểm tra email hoặc gửi lại mã OTP.');
@@ -39,37 +46,6 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Hàm parse tên thiết bị từ message "Tài khoản đang được dùng trên "Chrome trên Windows"...."
-  function extractDeviceName(message) {
-    const match = message.match(/đang được dùng trên "([^"]+)"/);
-    return match ? match[1] : 'thiết bị khác';
-  }
-
-  const handleReplaceDevice = async () => {
-    if (!deviceConflict) return;
-    setReplacing(true);
-    setError('');
-
-    const deviceId = deviceService.getDeviceId();
-    const deviceName = deviceService.getDeviceName();
-
-    try {
-      const response = await apiService.replaceDevice({
-        email: deviceConflict.email,
-        password: deviceConflict.password,
-        deviceId,
-        deviceName,
-      });
-      setDeviceConflict(null);
-      onLogin(response.user, response.token);
-    } catch (err) {
-      setError(err.message);
-      setDeviceConflict(null);
-    } finally {
-      setReplacing(false);
     }
   };
 
@@ -85,10 +61,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCancelReplace = () => {
-    setDeviceConflict(null);
   };
 
   return (
@@ -130,33 +102,6 @@ export default function LoginPage() {
 
           {error && <p className="rounded-xl bg-rose-50 dark:bg-rose-900/30 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
 
-          {/* Dialog xác nhận thay thế thiết bị */}
-          {deviceConflict && (
-            <div className="rounded-2xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-5">
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-400 mb-1">⚠️ Xung đột thiết bị</p>
-              <p className="text-sm text-amber-700 dark:text-amber-300">
-                Tài khoản đang được dùng trên <strong>"{deviceConflict.existingDevice.deviceName}"</strong>.
-              </p>
-              <div className="mt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleReplaceDevice}
-                  disabled={replacing}
-                  className="flex-1 rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
-                >
-                  {replacing ? 'Đang xử lý...' : 'Đăng xuất thiết bị kia'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelReplace}
-                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
-                >
-                  Hủy
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Email not verified */}
           {emailNotVerified && (
             <div className="rounded-2xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-5">
@@ -176,7 +121,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading || !!deviceConflict}
+            disabled={loading}
             className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition disabled:bg-slate-300 dark:disabled:bg-slate-600"
           >
             {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}

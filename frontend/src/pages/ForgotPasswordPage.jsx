@@ -77,6 +77,17 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  // Cho phép paste toàn bộ mã OTP (6 số) vào ô đầu tiên
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text/plain').trim();
+    if (!/^\d{6}$/.test(pastedData)) return;
+    
+    const digits = pastedData.split('');
+    setOtp(digits);
+    otpRefs.current[5]?.focus();
+  };
+
   const handleVerifyOtp = async () => {
     const otpCode = otp.join('');
     if (otpCode.length !== 6) {
@@ -216,6 +227,7 @@ export default function ForgotPasswordPage() {
                   value={digit}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  onPaste={index === 0 ? handleOtpPaste : undefined}
                   className="w-12 h-14 text-center text-2xl font-bold rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-600"
                   inputMode="numeric"
                   autoComplete="one-time-code"

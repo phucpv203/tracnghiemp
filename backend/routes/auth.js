@@ -2,10 +2,10 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { registerUser, loginUser, loginAndReplaceDevice, getUserById } from '../services/authService.js';
-import { deleteDeviceByUserId } from '../services/deviceService.js';
+import { deleteDeviceByUserId, replaceDevice } from '../services/deviceService.js';
 import { requireAuth } from '../middleware/auth.js';
 import { query } from '../services/db.js';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../services/emailService.js';
+import { sendVerificationEmail, sendPasswordResetEmail, sendDeviceChangeOtpEmail } from '../services/emailService.js';
 
 const router = Router();
 
@@ -35,23 +35,19 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ message: 'Email đã tồn tại.' });
       }
       // Nếu tài khoản chưa verified, cho phép đăng ký lại (cập nhật thông tin)
-      // Xoá OTP cũ
       await query('DELETE FROM verification_codes WHERE email = $1', [email]);
-      // Cập nhật thông tin user
       const password_hash = await bcrypt.hash(password, 10);
       await query(
         'UPDATE users SET name = $1, password_hash = $2, updated_at = NOW() WHERE id = $3',
         [name, password_hash, user.id]
       );
       
-      // Tạo OTP mới
       const otp = generateOTP();
       await query(
         'INSERT INTO verification_codes (email, code, type, expires_at) VALUES ($1, $2, $3, $4)',
         [email, otp, 'email_verification', new Date(Date.now() + 5 * 60 * 1000)]
       );
       
-      // Gửi email
       await sendVerificationEmail(email, otp, name);
       
       return res.json({
@@ -62,19 +58,17 @@ router.post('/register', async (req, res) => {
     
     // Tạo user mới
     const password_hash = await bcrypt.hash(password, 10);
-    const result = await query(
-      'INSERT INTO users(name, email, password_hash, role, points, email_verified) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, role, points',
+    await query(
+      'INSERT INTO users(name, email, password_hash, role, points, email_verified) VALUES ($1, $2, $3, $4, $5, $6)',
       [name, email, password_hash, 'user', 0, false]
     );
     
-    // Tạo OTP
     const otp = generateOTP();
     await query(
       'INSERT INTO verification_codes (email, code, type, expires_at) VALUES ($1, $2, $3, $4)',
       [email, otp, 'email_verification', new Date(Date.now() + 5 * 60 * 1000)]
     );
     
-    // Gửi email
     await sendVerificationEmail(email, otp, name);
     
     res.json({
@@ -89,7 +83,6 @@ router.post('/register', async (req, res) => {
 /**
  * POST /auth/verify-email
  * Xác thực email bằng OTP
- * Body: { email, otp }
  */
 router.post('/verify-email', async (req, res) => {
   try {
@@ -99,7 +92,6 @@ router.post('/verify-email', async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng nhập email và mã OTP.' });
     }
     
-    // Tìm OTP hợp lệ
     const codeRes = await query(
       `SELECT * FROM verification_codes 
        WHERE email = $1 AND code = $2 AND type = 'email_verification' 
@@ -109,7 +101,6 @@ router.post('/verify-email', async (req, res) => {
     );
     
     if (!codeRes.rows.length) {
-      // Kiểm tra xem có OTP hết hạn không
       const expiredRes = await query(
         `SELECT * FROM verification_codes 
          WHERE email = $1 AND code = $2 AND type = 'email_verification' AND used_at IS NULL
@@ -122,17 +113,12 @@ router.post('/verify-email', async (req, res) => {
       return res.status(400).json({ message: 'Mã OTP không đúng.' });
     }
     
-    // Đánh dấu OTP đã dùng
     await query('UPDATE verification_codes SET used_at = NOW() WHERE id = $1', [codeRes.rows[0].id]);
-    
-    // Kích hoạt tài khoản
     await query('UPDATE users SET email_verified = true, updated_at = NOW() WHERE email = $1', [email]);
     
-    // Lấy thông tin user
     const userRes = await query('SELECT id, name, email, role, points FROM users WHERE email = $1', [email]);
     const user = userRes.rows[0];
     
-    // Tạo token tự động đăng nhập
     const token = jwt.sign(
       { sub: user.id, email: user.email, role: user.role },
       SECRET,
@@ -158,7 +144,6 @@ router.post('/verify-email', async (req, res) => {
 /**
  * POST /auth/resend-otp
  * Gửi lại OTP xác thực email
- * Body: { email }
  */
 router.post('/resend-otp', async (req, res) => {
   try {
@@ -168,7 +153,6 @@ router.post('/resend-otp', async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng nhập email.' });
     }
     
-    // Kiểm tra email tồn tại
     const userRes = await query('SELECT id, name, email_verified FROM users WHERE email = $1', [email]);
     if (!userRes.rows.length) {
       return res.status(404).json({ message: 'Email không tồn tại trong hệ thống.' });
@@ -179,18 +163,15 @@ router.post('/resend-otp', async (req, res) => {
       return res.status(400).json({ message: 'Email này đã được xác thực.' });
     }
     
-    // Xoá OTP cũ
     await query('DELETE FROM verification_codes WHERE email = $1 AND type = $2 AND used_at IS NULL',
       [email, 'email_verification']);
     
-    // Tạo OTP mới
     const otp = generateOTP();
     await query(
       'INSERT INTO verification_codes (email, code, type, expires_at) VALUES ($1, $2, $3, $4)',
       [email, otp, 'email_verification', new Date(Date.now() + 5 * 60 * 1000)]
     );
     
-    // Gửi email
     await sendVerificationEmail(email, otp, user.name);
     
     res.json({ message: 'Mã OTP mới đã được gửi đến email của bạn.' });
@@ -202,7 +183,6 @@ router.post('/resend-otp', async (req, res) => {
 /**
  * POST /auth/forgot-password
  * Gửi OTP đặt lại mật khẩu
- * Body: { email }
  */
 router.post('/forgot-password', async (req, res) => {
   try {
@@ -212,27 +192,22 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng nhập email.' });
     }
     
-    // Kiểm tra email tồn tại
     const userRes = await query('SELECT id, name FROM users WHERE email = $1', [email]);
     if (!userRes.rows.length) {
-      // Không tiết lộ email có tồn tại hay không
       return res.json({ message: 'Nếu email tồn tại, mã OTP sẽ được gửi đến bạn.' });
     }
     
     const user = userRes.rows[0];
     
-    // Xoá OTP cũ
     await query('DELETE FROM verification_codes WHERE email = $1 AND type = $2 AND used_at IS NULL',
       [email, 'password_reset']);
     
-    // Tạo OTP mới
     const otp = generateOTP();
     await query(
       'INSERT INTO verification_codes (email, code, type, expires_at) VALUES ($1, $2, $3, $4)',
       [email, otp, 'password_reset', new Date(Date.now() + 5 * 60 * 1000)]
     );
     
-    // Gửi email
     await sendPasswordResetEmail(email, otp, user.name);
     
     res.json({ message: 'Nếu email tồn tại, mã OTP sẽ được gửi đến bạn.' });
@@ -244,7 +219,6 @@ router.post('/forgot-password', async (req, res) => {
 /**
  * POST /auth/reset-password
  * Đặt lại mật khẩu với OTP
- * Body: { email, otp, newPassword }
  */
 router.post('/reset-password', async (req, res) => {
   try {
@@ -258,7 +232,6 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 6 ký tự.' });
     }
     
-    // Tìm OTP hợp lệ
     const codeRes = await query(
       `SELECT * FROM verification_codes 
        WHERE email = $1 AND code = $2 AND type = 'password_reset' 
@@ -280,10 +253,8 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'Mã OTP không đúng.' });
     }
     
-    // Đánh dấu OTP đã dùng
     await query('UPDATE verification_codes SET used_at = NOW() WHERE id = $1', [codeRes.rows[0].id]);
     
-    // Cập nhật mật khẩu
     const password_hash = await bcrypt.hash(newPassword, 10);
     await query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2',
       [password_hash, email]);
@@ -295,8 +266,157 @@ router.post('/reset-password', async (req, res) => {
 });
 
 /**
+ * POST /auth/request-device-otp
+ * Gửi OTP để xác nhận đổi thiết bị (kiểm tra giới hạn 1 tuần)
+ * Body: { email, password, deviceId, deviceName }
+ */
+router.post('/request-device-otp', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Vui lòng nhập email và mật khẩu.' });
+    }
+    
+    // Xác thực thông tin đăng nhập
+    const result = await query(
+      'SELECT id, name, email, password_hash, email_verified, last_device_change_at FROM users WHERE email = $1',
+      [email]
+    );
+    const user = result.rows[0];
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.status(401).json({ message: 'Email hoặc mật khẩu không đúng.' });
+    }
+    
+    if (!user.email_verified) {
+      return res.status(403).json({
+        message: 'Email chưa được xác thực. Vui lòng xác thực email trước.',
+        code: 'EMAIL_NOT_VERIFIED',
+        email
+      });
+    }
+    
+    // Kiểm tra giới hạn 1 tuần
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    if (user.last_device_change_at) {
+      const timeSinceLastChange = Date.now() - new Date(user.last_device_change_at).getTime();
+      if (timeSinceLastChange < ONE_WEEK_MS) {
+        const remainingMs = ONE_WEEK_MS - timeSinceLastChange;
+        const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+        return res.status(429).json({
+          message: `Bạn chỉ được phép đổi thiết bị mỗi tuần một lần. Vui lòng thử lại sau ${remainingDays} ngày.`,
+          code: 'DEVICE_CHANGE_LIMIT',
+          remainingDays
+        });
+      }
+    }
+    
+    // Xoá OTP cũ
+    await query('DELETE FROM verification_codes WHERE email = $1 AND type = $2 AND used_at IS NULL',
+      [email, 'device_change']);
+    
+    // Tạo OTP mới
+    const otp = generateOTP();
+    await query(
+      'INSERT INTO verification_codes (email, code, type, expires_at) VALUES ($1, $2, $3, $4)',
+      [email, otp, 'device_change', new Date(Date.now() + 5 * 60 * 1000)]
+    );
+    
+    // Gửi email OTP xác nhận đổi thiết bị
+    const existingDevice = await query(
+      'SELECT device_name FROM user_devices WHERE user_id = $1',
+      [user.id]
+    );
+    const currentDeviceName = existingDevice.rows[0]?.device_name || 'thiết bị hiện tại';
+    
+    await sendDeviceChangeOtpEmail(email, otp, user.name, currentDeviceName);
+    
+    res.json({
+      message: `Mã OTP đã được gửi đến email ${email}. Vui lòng kiểm tra email để xác nhận đổi thiết bị.`,
+      email
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * POST /auth/verify-device-otp
+ * Xác nhận OTP và đổi thiết bị (đăng nhập)
+ * Body: { email, otp, password, deviceId, deviceName }
+ */
+router.post('/verify-device-otp', async (req, res) => {
+  try {
+    const { email, otp, deviceId, deviceName } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Vui lòng nhập email và mã OTP.' });
+    }
+    
+    // Tìm OTP hợp lệ
+    const codeRes = await query(
+      `SELECT * FROM verification_codes 
+       WHERE email = $1 AND code = $2 AND type = 'device_change' 
+       AND used_at IS NULL AND expires_at > NOW() 
+       ORDER BY created_at DESC LIMIT 1`,
+      [email, otp]
+    );
+    
+    if (!codeRes.rows.length) {
+      const expiredRes = await query(
+        `SELECT * FROM verification_codes 
+         WHERE email = $1 AND code = $2 AND type = 'device_change' AND used_at IS NULL
+         ORDER BY created_at DESC LIMIT 1`,
+        [email, otp]
+      );
+      if (expiredRes.rows.length) {
+        return res.status(400).json({ message: 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.' });
+      }
+      return res.status(400).json({ message: 'Mã OTP không đúng.' });
+    }
+    
+    // Đánh dấu OTP đã dùng
+    await query('UPDATE verification_codes SET used_at = NOW() WHERE id = $1', [codeRes.rows[0].id]);
+    
+    // Lấy user
+    const userRes = await query('SELECT id, name, email, role, points FROM users WHERE email = $1', [email]);
+    const user = userRes.rows[0];
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+    }
+    
+    // Thay thế thiết bị và cập nhật last_device_change_at
+    await replaceDevice(user.id, deviceId, deviceName || 'Unknown device');
+    
+    // Cập nhật thời gian đổi thiết bị
+    await query('UPDATE users SET last_device_change_at = NOW(), updated_at = NOW() WHERE id = $1', [user.id]);
+    
+    // Tạo token
+    const token = jwt.sign(
+      { sub: user.id, email: user.email, role: user.role },
+      SECRET,
+      { expiresIn: '15d' }
+    );
+    
+    res.json({
+      message: 'Đổi thiết bị thành công!',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        points: Number(user.points),
+      },
+      token
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
  * POST /auth/login
- * Đăng nhập - kiểm tra email đã verified chưa
+ * Đăng nhập - kiểm tra email verified và thiết bị
  */
 router.post('/login', async (req, res) => {
   try {
@@ -327,7 +447,7 @@ router.post('/login', async (req, res) => {
 });
 
 /**
- * POST /auth/replace-device
+ * POST /auth/replace-device (legacy - giữ để tương thích)
  * Đăng nhập và thay thế thiết bị cũ
  */
 router.post('/replace-device', async (req, res) => {
@@ -342,7 +462,6 @@ router.post('/replace-device', async (req, res) => {
 
 /**
  * POST /auth/logout
- * Xoá device record và token (logout)
  */
 router.post('/logout', requireAuth, async (req, res) => {
   try {
@@ -355,7 +474,6 @@ router.post('/logout', requireAuth, async (req, res) => {
 
 /**
  * GET /auth/me
- * Trả về thông tin user hiện tại (dựa trên token).
  */
 router.get('/me', requireAuth, async (req, res) => {
   try {
