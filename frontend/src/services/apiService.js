@@ -99,6 +99,10 @@ export const apiService = {
   submitExam: (courseId, answers) =>
     request(`/exams/${courseId}/submit`, { method: 'POST', body: JSON.stringify({ answers }) }),
 
+  // ===== Favorites =====
+  getFavorites: () => request('/favorites'),
+  toggleFavorite: (courseId) => request('/favorites/toggle', { method: 'POST', body: JSON.stringify({ courseId }) }),
+
   // ===== Admin =====
   getUsers: (searchTerm) => {
     const query = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';

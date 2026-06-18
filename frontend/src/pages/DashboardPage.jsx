@@ -2,10 +2,10 @@
  * DashboardPage - Trang chủ hiển thị danh sách môn học
  * 
  * Hỗ trợ 2 trạng thái:
- * - Đã đăng nhập: hiển thị đầy đủ chức năng (học tập, thi thử, mở khóa, điểm)
+ * - Đã đăng nhập: hiển thị đầy đủ chức năng (học tập, thi thử, mở khóa, điểm, yêu thích)
  * - Chưa đăng nhập: hiển thị danh sách môn học dạng chỉ xem + nút Đăng nhập/Đăng ký
  */
-import { useContext, useEffect, useState, useMemo } from 'react';
+import { useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
@@ -23,8 +23,15 @@ export default function DashboardPage() {
   const [unlockingLoading, setUnlockingLoading] = useState(false);
   const [toast, setToast] = useState(null); // {message, type: 'success'|'error'}
   const [searchTerm, setSearchTerm] = useState('');   // Từ khóa tìm kiếm môn học
+  const [favoriteIds, setFavoriteIds] = useState(new Set()); // Set course_id yêu thích
 
   const isAuthenticated = !!user;
+
+  // Hiển thị toast
+  const showToast = useCallback((message, type) => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
 
   // Load data from API
   useEffect(() => {
@@ -35,9 +42,13 @@ export default function DashboardPage() {
         
         // Chỉ gọi progress khi đã đăng nhập
         if (isAuthenticated) {
-          const progressData = await apiService.getProgress();
+          const [progressData, favData] = await Promise.all([
+            apiService.getProgress(),
+            apiService.getFavorites().catch(() => ({ favoriteIds: [] }))
+          ]);
           setProgress(progressData.progress || []);
           setUserPoints(progressData.points || 0);
+          setFavoriteIds(new Set(favData.favoriteIds || []));
         }
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
@@ -58,32 +69,38 @@ export default function DashboardPage() {
     return map;
   }, [progress]);
 
-  // Process courses with their status and sort: unlocked first (A-Z), then locked (A-Z)
+  // Process courses with their status and sort: favorites first,
+  // then unlocked (A-Z), then locked (A-Z)
   const activeCourses = useMemo(() => {
     const processed = courses.map(course => {
       const userProgress = progressMap.get(Number(course.id));
-      // Unlocked = có record trong user_progress (status bất kỳ: learning/completed)
-      // Locked = chưa có record, cần dùng điểm để mở
       const isUnlocked = !!userProgress;
       const requiredPoints = Number(course.required_points) || 0;
+      const isFavorite = favoriteIds.has(Number(course.id));
       
       return {
         id: course.id,
         title: course.title,
         description: course.description || '',
         unlocked: isUnlocked,
-        requiredPoints
+        requiredPoints,
+        isFavorite
       };
     });
 
-    // Sắp xếp: mở khóa lên đầu (A-Z), chưa mở khóa ở dưới (A-Z)
+    // Sắp xếp: yêu thích lên đầu, sau đó mở khóa (A-Z), cuối cùng chưa mở khóa (A-Z)
     return processed.sort((a, b) => {
+      // Yêu thích luôn lên đầu
+      if (a.isFavorite !== b.isFavorite) {
+        return a.isFavorite ? -1 : 1;
+      }
+      // Kế đến là mở khóa
       if (a.unlocked !== b.unlocked) {
         return a.unlocked ? -1 : 1;
       }
       return a.title.localeCompare(b.title, 'vi');
     });
-  }, [courses, progressMap]);
+  }, [courses, progressMap, favoriteIds]);
 
   // Filter courses based on search term
   const filteredCourses = useMemo(() => {
@@ -93,6 +110,37 @@ export default function DashboardPage() {
       course.title.toLowerCase().includes(keyword)
     );
   }, [activeCourses, searchTerm]);
+
+  // Toggle yêu thích
+  const handleToggleFavorite = async (courseId, e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    if (!isAuthenticated) return;
+    
+    // Optimistic update
+    const newFavorites = new Set(favoriteIds);
+    const wasFavorite = newFavorites.has(Number(courseId));
+    if (wasFavorite) {
+      newFavorites.delete(Number(courseId));
+    } else {
+      newFavorites.add(Number(courseId));
+    }
+    setFavoriteIds(newFavorites);
+
+    try {
+      const result = await apiService.toggleFavorite(courseId);
+      if (result.favorite) {
+        showToast('Đã thêm vào yêu thích!', 'success');
+      } else {
+        showToast('Đã bỏ yêu thích.', 'success');
+      }
+    } catch (error) {
+      // Rollback on error
+      setFavoriteIds(favoriteIds);
+      showToast('Không thể cập nhật yêu thích.', 'error');
+    }
+  };
 
   const handleUnlock = async (courseId) => {
     setUnlockingLoading(true);
@@ -110,13 +158,11 @@ export default function DashboardPage() {
         // Thêm progress mới vào state (không cần gọi lại API)
         setProgress((prev) => [...prev, { courseId, userId, status: 'learning', score: 0 }]);
         // Hiện toast thành công
-        setToast({ message: result.message || 'Mở khóa thành công!', type: 'success' });
-        setTimeout(() => setToast(null), 3000);
+        showToast(result.message || 'Mở khóa thành công!', 'success');
       }
     } catch (error) {
       console.error('[Dashboard] Unlock error:', error);
-      setToast({ message: error.message || 'Không thể mở khóa môn học.', type: 'error' });
-      setTimeout(() => setToast(null), 3000);
+      showToast(error.message || 'Không thể mở khóa môn học.', 'error');
     } finally {
       setUnlockingLoading(false);
       setUnlockingCourseId(null);
@@ -232,10 +278,38 @@ export default function DashboardPage() {
         <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-4">
           {filteredCourses.map((course) => (
             <article key={course.id} className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30">
-              <div className="flex-1 min-w-0 mb-4">
-                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{course.title}</h2>
-                {course.description && (
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{course.description}</p>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{course.title}</h2>
+                  {course.description && (
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{course.description}</p>
+                  )}
+                </div>
+                {/* Nút yêu thích hình trái tim - chỉ hiển thị khi đã đăng nhập */}
+                {isAuthenticated && (
+                  <button
+                    onClick={(e) => handleToggleFavorite(course.id, e)}
+                    className="ml-3 flex-shrink-0 p-1.5 rounded-full transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none"
+                    title={course.isFavorite ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+                  >
+                    <svg
+                      className={`w-6 h-6 transition-colors duration-150 ${
+                        course.isFavorite
+                          ? 'text-red-500 fill-red-500'
+                          : 'text-slate-400 dark:text-slate-500 fill-none hover:text-red-400 dark:hover:text-red-400'
+                      }`}
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={course.isFavorite ? 0 : 2}
+                      fill={course.isFavorite ? 'currentColor' : 'none'}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
+                      />
+                    </svg>
+                  </button>
                 )}
               </div>
               
