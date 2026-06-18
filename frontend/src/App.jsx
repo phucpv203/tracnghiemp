@@ -12,6 +12,8 @@ import { useState, useEffect, createContext, useRef, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import StudyPage from './pages/StudyPage';
 import GuestStudyPage from './pages/GuestStudyPage';
@@ -150,6 +152,8 @@ function App() {
           <Routes>
           <Route path="/login" element={user ? <Navigate to="/trang-chu" replace /> : <LoginPage />} />
           <Route path="/register" element={user ? <Navigate to="/trang-chu" replace /> : <RegisterPage />} />
+          <Route path="/verify-email" element={user ? <Navigate to="/trang-chu" replace /> : <VerifyEmailPage />} />
+          <Route path="/forgot-password" element={user ? <Navigate to="/trang-chu" replace /> : <ForgotPasswordPage />} />
           <Route path="/trang-chu" element={<DashboardPage />} />
           <Route path="/preview/:courseId" element={<GuestStudyPage />} />
           <Route
