@@ -18,7 +18,7 @@ export default function VerifyEmailPage() {
   const { onLogin } = useContext(AuthContext);
 
   const startCountdown = () => {
-    setCountdown(60);
+    setCountdown(300);
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -153,7 +153,9 @@ export default function VerifyEmailPage() {
                       : 'text-slate-900 dark:text-slate-200 hover:text-slate-600 dark:hover:text-slate-400'
                   }`}
                 >
-                  {countdown > 0 ? `Gửi lại mã (${countdown}s)` : 'Gửi lại mã OTP'}
+                {countdown > 0
+                  ? `Gửi lại mã (${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')})`
+                  : 'Gửi lại mã OTP'}
                 </button>
               </div>
             </>

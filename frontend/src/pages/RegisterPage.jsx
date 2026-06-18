@@ -28,7 +28,7 @@ export default function RegisterPage() {
   };
 
   const startCountdown = () => {
-    setCountdown(60);
+    setCountdown(300);
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -146,7 +146,7 @@ export default function RegisterPage() {
                 }`}
               >
                 {countdown > 0
-                  ? `Gửi lại mã (${countdown}s)`
+                  ? `Gửi lại mã (${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')})`
                   : 'Gửi lại mã OTP'}
               </button>
             </div>
