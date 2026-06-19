@@ -1,23 +1,15 @@
 /**
  * deviceService - Quản lý Device_ID trên trình duyệt
  *
- * - Sinh UUID ngẫu nhiên cho thiết bị
- * - Lưu vào localStorage với thời hạn 1 năm
+ * - Sử dụng @fingerprintjs/fingerprintjs để tạo visitorId duy nhất dựa trên
+ *   thông tin phần cứng và trình duyệt (thay vì UUID ngẫu nhiên như trước)
+ * - Cache visitorId vào localStorage để dùng đồng bộ
  * - Lấy tên thiết bị từ User Agent
  */
 
-const DEVICE_ID_KEY = 'quiz-app-device-id';
-const DEVICE_NAME_KEY = 'quiz-app-device-name';
-const EXPIRY_MS = 365 * 24 * 60 * 60 * 1000; // 1 năm
+import { fingerprintService } from './fingerprintService';
 
-function generateUUID() {
-  // Tạo UUID v4 ngẫu nhiên
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
+const DEVICE_NAME_KEY = 'quiz-app-device-name';
 
 function getDeviceName() {
   const ua = navigator.userAgent;
@@ -40,22 +32,21 @@ function getDeviceName() {
 }
 
 export const deviceService = {
-  /** Lấy device_id hiện tại, nếu chưa có thì tạo mới */
-  getDeviceId() {
-    let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-    const savedTime = localStorage.getItem(DEVICE_ID_KEY + '-time');
+  /**
+   * Lấy device_id từ Fingerprint.js
+   * - Nếu đã cache fingerprint trong localStorage, trả về ngay (đồng bộ)
+   * - Nếu chưa, init fingerprint (bất đồng bộ) và lấy visitorId
+   */
+  async getDeviceId() {
+    // Thử lấy từ cache đồng bộ trước
+    const cached = fingerprintService.getVisitorId();
+    if (cached) return cached;
 
-    // Nếu chưa có hoặc đã hết hạn (1 năm) → tạo mới
-    if (!deviceId || !savedTime || Date.now() - Number(savedTime) > EXPIRY_MS) {
-      deviceId = generateUUID();
-      localStorage.setItem(DEVICE_ID_KEY, deviceId);
-      localStorage.setItem(DEVICE_ID_KEY + '-time', String(Date.now()));
-    }
-
-    return deviceId;
+    // Nếu chưa có cache, init fingerprint
+    return fingerprintService.init();
   },
 
-  /** Lấy tên thiết bị */
+  /** Lấy tên thiết bị từ User Agent */
   getDeviceName() {
     let deviceName = localStorage.getItem(DEVICE_NAME_KEY);
     if (!deviceName) {

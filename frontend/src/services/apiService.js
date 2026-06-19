@@ -26,9 +26,9 @@ async function request(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  // Gắn Device_ID vào header của mọi request
+  // Gắn Device_ID (Fingerprint.js) vào header của mọi request
   try {
-    headers['X-Device-Id'] = deviceService.getDeviceId();
+    headers['X-Device-Id'] = await deviceService.getDeviceId();
   } catch (_) {
     // browser-only, ignore
   }

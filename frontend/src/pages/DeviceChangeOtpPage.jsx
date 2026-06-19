@@ -119,7 +119,7 @@ export default function DeviceChangeOtpPage() {
     setLoading(true);
     setError('');
     try {
-      const deviceId = deviceService.getDeviceId();
+      const deviceId = await deviceService.getDeviceId();
       const deviceName = deviceService.getDeviceName();
       
       const result = await apiService.verifyDeviceOtp({

@@ -28,6 +28,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import { authService } from './services/authService';
 import { apiService, setOnUnauthorized } from './services/apiService';
+import { fingerprintService } from './services/fingerprintService';
 
 export const AuthContext = createContext(null);
 export const ThemeContext = createContext({ dark: false, toggleTheme: () => {} });
@@ -58,6 +59,13 @@ function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
+
+  // Khởi tạo Fingerprint.js ngay khi app mount (để cache fingerprint sớm)
+  useEffect(() => {
+    fingerprintService.init().catch(() => {
+      // Silent fail, fingerprint sẽ được init sau khi cần
+    });
+  }, []);
 
   // Verify token khi app mount
   useEffect(() => {

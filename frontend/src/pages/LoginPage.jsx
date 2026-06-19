@@ -25,7 +25,7 @@ export default function LoginPage() {
     setLoading(true);
     setEmailNotVerified(null);
 
-    const deviceId = deviceService.getDeviceId();
+    const deviceId = await deviceService.getDeviceId();
     const deviceName = deviceService.getDeviceName();
 
     try {
