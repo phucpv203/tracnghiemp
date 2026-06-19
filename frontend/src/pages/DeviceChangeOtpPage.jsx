@@ -22,6 +22,16 @@ export default function DeviceChangeOtpPage() {
   const otpRefs = useRef([]);
   const navigate = useNavigate();
   const { onLogin } = useContext(AuthContext);
+  const countdownRef = useRef(null);
+
+  // Cleanup interval khi unmount
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+    };
+  }, []);
 
   // Tự động gửi OTP khi có sẵn email + password từ LoginPage
   useEffect(() => {
@@ -32,11 +42,16 @@ export default function DeviceChangeOtpPage() {
   }, []);
 
   const startCountdown = () => {
+    // Clear interval cũ nếu có
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+    }
     setCountdown(300);
-    const timer = setInterval(() => {
+    countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
           return 0;
         }
         return prev - 1;
@@ -46,6 +61,7 @@ export default function DeviceChangeOtpPage() {
 
   const handleRequestOtp = async (event) => {
     event?.preventDefault();
+    if (sending) return; // chặn double click
     setSending(true);
     setError('');
     setMessage('');
@@ -72,7 +88,7 @@ export default function DeviceChangeOtpPage() {
   };
 
   const handleResendOtp = async () => {
-    if (countdown > 0 || !emailInput) return;
+    if (countdown > 0 || sending || !emailInput) return;
     setSending(true);
     setError('');
     try {

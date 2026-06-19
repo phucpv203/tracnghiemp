@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 
@@ -14,13 +14,27 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const otpRefs = useRef([]);
   const navigate = useNavigate();
+  const countdownRef = useRef(null);
+
+  // Cleanup interval khi unmount
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+    };
+  }, []);
 
   const startCountdown = () => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+    }
     setCountdown(300);
-    const timer = setInterval(() => {
+    countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
           return 0;
         }
         return prev - 1;

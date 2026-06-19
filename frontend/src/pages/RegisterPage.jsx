@@ -1,4 +1,4 @@
-import { useState, useRef, useContext } from 'react';
+import { useState, useRef, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { AuthContext } from '../App';
@@ -14,6 +14,16 @@ export default function RegisterPage() {
   const otpRefs = useRef([]);
   const navigate = useNavigate();
   const { onLogin } = useContext(AuthContext);
+  const countdownRef = useRef(null);
+
+  // Cleanup interval khi unmount
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+    };
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -28,11 +38,15 @@ export default function RegisterPage() {
   };
 
   const startCountdown = () => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+    }
     setCountdown(300);
-    const timer = setInterval(() => {
+    countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
           return 0;
         }
         return prev - 1;
