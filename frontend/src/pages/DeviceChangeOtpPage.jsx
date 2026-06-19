@@ -1,4 +1,4 @@
-import { useState, useRef, useContext } from 'react';
+import { useState, useRef, useContext, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { deviceService } from '../services/deviceService';
@@ -22,6 +22,14 @@ export default function DeviceChangeOtpPage() {
   const otpRefs = useRef([]);
   const navigate = useNavigate();
   const { onLogin } = useContext(AuthContext);
+
+  // Tự động gửi OTP khi có sẵn email + password từ LoginPage
+  useEffect(() => {
+    if (email && password) {
+      handleRequestOtp();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startCountdown = () => {
     setCountdown(300);
