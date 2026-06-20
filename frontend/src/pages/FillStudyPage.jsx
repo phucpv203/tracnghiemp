@@ -150,13 +150,13 @@ export default function FillStudyPage() {
   useEffect(() => {
     function handleKeyDown(e) {
       // a / ArrowLeft -> previous question
-      if (e.key === 'a' || e.key === 'ArrowLeft') {
+      if (e.key === 'ArrowLeft') {
         e.preventDefault();
         handlePrev();
         return;
       }
       // d / ArrowRight -> next question
-      if (e.key === 'd' || e.key === 'ArrowRight') {
+      if (e.key === 'ArrowRight') {
         e.preventDefault();
         handleNext();
         return;
