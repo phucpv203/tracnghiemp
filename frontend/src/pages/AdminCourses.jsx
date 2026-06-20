@@ -8,7 +8,7 @@ export default function AdminCourses() {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newCourse, setNewCourse] = useState({ title: '', description: '', requiredScore: 0, questionType: 'choice' });
+  const [newCourse, setNewCourse] = useState({ title: '', description: '', requiredScore: 20, questionType: 'choice' });
   const [uploadCourseId, setUploadCourseId] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [importMessage, setImportMessage] = useState('');
@@ -32,7 +32,7 @@ export default function AdminCourses() {
   const create = async () => {
     const res = await apiService.createCourse(newCourse);
     setCourses((s) => [...s, res.course]);
-    setNewCourse({ title: '', description: '', requiredScore: 0, questionType: 'choice' });
+    setNewCourse({ title: '', description: '', requiredScore: 20, questionType: 'choice' });
   };
 
   const update = async (id) => {
@@ -168,7 +168,19 @@ export default function AdminCourses() {
         {courses.map((c) => (
           <div key={c.id} className="rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{c.title}</h3>
+              <div className="flex items-center gap-3">
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">{c.title}</h3>
+                <span className="rounded-full bg-amber-100 dark:bg-amber-900/40 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                  🔒 {c.required_points || 0} điểm
+                </span>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  c.question_type === 'fill'
+                    ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400'
+                    : 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400'
+                }`}>
+                  {c.question_type === 'fill' ? 'Điền đáp án' : 'Trắc nghiệm'}
+                </span>
+              </div>
               <button
                 onClick={() => handleDeleteCourse(c.id, c.title)}
                 disabled={deletingCourseId === c.id}
@@ -188,7 +200,7 @@ export default function AdminCourses() {
             <input
               id={`required-${c.id}`}
               type="number"
-              defaultValue={c.requiredScore || 0}
+              defaultValue={c.required_points || 0}
               className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
               placeholder="Điểm mở khóa"
             />
