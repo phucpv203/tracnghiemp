@@ -9,7 +9,7 @@
  * - answers[1].answer_text = đáp án đúng, is_correct = true
  */
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { apiService } from '../services/apiService';
 
 export default function FillExamPage() {
@@ -25,10 +25,11 @@ export default function FillExamPage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [correctAnswers, setCorrectAnswers] = useState({}); // {questionId: "correctText"}
+  const [zoomedImage, setZoomedImage] = useState(null);
 
   const currentQuestion = questions[currentQuestionIndex];
 
-  // Timer ref
+  // Timer
   useEffect(() => {
     if (!submitted && timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
@@ -209,26 +210,29 @@ export default function FillExamPage() {
           </div>
         </div>
 
-        {/* Right: Image */}
-        <div className="rounded-[32px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-[0_24px_100px_-48px_rgba(15,23,42,0.25)] dark:shadow-[0_24px_100px_-48px_rgba(0,0,0,0.5)]">
-          {imageUrl ? (
-            <div className="flex items-center justify-center min-h-[300px]">
-              <img
-                src={imageUrl}
-                alt={`Hình minh họa câu ${currentQuestionIndex + 1}`}
-                className="max-w-full h-auto rounded-2xl object-contain"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.parentElement.innerHTML = '<p class="text-slate-400">Không thể tải hình ảnh</p>';
-                }}
-              />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center min-h-[300px] text-slate-400 dark:text-slate-500">
-              <p>Không có hình ảnh</p>
-            </div>
-          )}
-        </div>
+          {/* Right: Image */}
+          <div className="rounded-[32px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-[0_24px_100px_-48px_rgba(15,23,42,0.25)] dark:shadow-[0_24px_100px_-48px_rgba(0,0,0,0.5)]">
+            {imageUrl ? (
+              <div
+                className="flex items-center justify-center min-h-[300px] cursor-zoom-in"
+                onClick={() => setZoomedImage(imageUrl)}
+              >
+                <img
+                  src={imageUrl}
+                  alt={`Hình minh họa câu ${currentQuestionIndex + 1}`}
+                  className="max-w-full h-auto rounded-2xl object-contain"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = '<p class="text-slate-400">Không thể tải hình ảnh</p>';
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center min-h-[300px] text-slate-400 dark:text-slate-500">
+                <p>Không có hình ảnh</p>
+              </div>
+            )}
+          </div>
       </div>
 
       {/* Progress dots */}
@@ -272,6 +276,26 @@ export default function FillExamPage() {
               );
             })}
           </div>
+        </div>
+      )}
+      {/* Image Zoom Modal */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setZoomedImage(null)}
+        >
+          <img
+            src={zoomedImage}
+            alt="Phóng to"
+            className="max-w-full max-h-full object-contain rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setZoomedImage(null)}
+            className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center text-2xl font-bold transition"
+          >
+            ✕
+          </button>
         </div>
       )}
     </main>
