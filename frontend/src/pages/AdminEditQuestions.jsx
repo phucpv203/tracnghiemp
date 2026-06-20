@@ -13,6 +13,7 @@ export default function AdminEditQuestions() {
   const [deletingAll, setDeletingAll] = useState(false);
   const [editForm, setEditForm] = useState({ content: '', answers: [], correct: 0 });
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [toast, setToast] = useState(null);
 
   const showToast = (message, type = 'success') => {
@@ -193,16 +194,37 @@ export default function AdminEditQuestions() {
                 </span>
                 <span className="text-slate-800 dark:text-slate-200">{q.content}</span>
               </div>
-              <button
-                onClick={() => handleEditClick(q)}
-                className={`shrink-0 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
-                  expandedId === q.id
-                    ? 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500'
-                    : 'bg-sky-600 text-white hover:bg-sky-700'
-                }`}
-              >
-                {expandedId === q.id ? 'Đóng' : 'Sửa'}
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={async () => {
+                    if (!window.confirm(`Xoá câu hỏi #${idx + 1}? Hành động này không thể hoàn tác!`)) return;
+                    setDeletingId(q.id);
+                    try {
+                      await apiService.deleteQuestion(q.id);
+                      showToast(`Đã xoá câu hỏi #${idx + 1}.`, 'success');
+                      fetchQuestions();
+                    } catch (err) {
+                      showToast('Lỗi khi xoá: ' + err.message, 'error');
+                    } finally {
+                      setDeletingId(null);
+                    }
+                  }}
+                  disabled={deletingId === q.id}
+                  className="rounded-md bg-red-500 px-3 py-2 text-xs font-semibold text-white hover:bg-red-600 disabled:bg-slate-300 dark:disabled:bg-slate-600 transition-colors"
+                >
+                  {deletingId === q.id ? '...' : '✕ Xoá'}
+                </button>
+                <button
+                  onClick={() => handleEditClick(q)}
+                  className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${
+                    expandedId === q.id
+                      ? 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500'
+                      : 'bg-sky-600 text-white hover:bg-sky-700'
+                  }`}
+                >
+                  {expandedId === q.id ? 'Đóng' : 'Sửa'}
+                </button>
+              </div>
             </div>
 
             {/* Expanded edit form */}

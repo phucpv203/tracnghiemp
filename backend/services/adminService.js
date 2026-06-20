@@ -256,6 +256,15 @@ export async function addQuestion(data) {
   return question;
 }
 
+export async function deleteQuestion(id) {
+  const questionId = Number(id);
+  const existing = await query('SELECT id FROM questions WHERE id = $1', [questionId]);
+  if (!existing.rows.length) return null;
+  await query('DELETE FROM answers WHERE question_id = $1', [questionId]);
+  await query('DELETE FROM questions WHERE id = $1', [questionId]);
+  return { id: questionId, deleted: true };
+}
+
 export async function updateQuestion(id, data) {
   const updates = [];
   const values = [Number(id)];

@@ -13,6 +13,7 @@ import {
   deleteCourse,
   addQuestion,
   updateQuestion,
+  deleteQuestion,
   updateUserProgress,
   importQuestions,
   deleteAllQuestionsByCourse,
@@ -149,6 +150,16 @@ router.post('/questions/import', async (req, res) => {
     const { courseId, questions } = req.body;
     const imported = await importQuestions(courseId, questions);
     res.status(201).json({ imported });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.delete('/questions/:id', async (req, res) => {
+  try {
+    const result = await deleteQuestion(req.params.id);
+    if (!result) return res.status(404).json({ message: 'Question not found' });
+    res.json({ message: 'Đã xoá câu hỏi thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
