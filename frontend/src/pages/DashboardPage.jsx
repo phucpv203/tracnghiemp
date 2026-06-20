@@ -84,7 +84,8 @@ export default function DashboardPage() {
         description: course.description || '',
         unlocked: isUnlocked,
         requiredPoints,
-        isFavorite
+        isFavorite,
+        questionType: course.question_type || 'choice'
       };
     });
 
@@ -316,18 +317,37 @@ export default function DashboardPage() {
               <div className="flex flex-wrap items-center gap-3">
                 {course.unlocked && isAuthenticated ? (
                   <div className="flex gap-3">
-                    <button
-                      onClick={() => navigate(`/study/${course.id}`)}
-                      className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
-                    >
-                      Ôn tập
-                    </button>
-                    <button
-                      onClick={() => navigate(`/exam/${course.id}`)}
-                      className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-                    >
-                      Thi thử
-                    </button>
+                    {course.questionType === 'fill' ? (
+                      <>
+                        <button
+                          onClick={() => navigate(`/fill-study/${course.id}`)}
+                          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                        >
+                          Ôn tập
+                        </button>
+                        <button
+                          onClick={() => navigate(`/fill-exam/${course.id}`)}
+                          className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                        >
+                          Thi thử
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => navigate(`/study/${course.id}`)}
+                          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                        >
+                          Ôn tập
+                        </button>
+                        <button
+                          onClick={() => navigate(`/exam/${course.id}`)}
+                          className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                        >
+                          Thi thử
+                        </button>
+                      </>
+                    )}
                   </div>
                 ) : isAuthenticated ? (
                   <div className="flex flex-wrap items-center gap-3">

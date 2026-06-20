@@ -139,9 +139,10 @@ export async function createCourse(data) {
   const slug = data.slug || slugify(data.title);
   const required_points = Number(data.requiredScore || 0);
   const description = data.description || '';
+  const question_type = data.questionType === 'fill' ? 'fill' : 'choice';
   const result = await query(
-    'INSERT INTO courses(title, slug, description, required_points) VALUES ($1, $2, $3, $4) RETURNING *',
-    [data.title, slug, description, required_points]
+    'INSERT INTO courses(title, slug, description, required_points, question_type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [data.title, slug, description, required_points, question_type]
   );
   return result.rows[0];
 }
@@ -162,6 +163,10 @@ export async function updateCourse(id, data) {
   if (data.requiredScore !== undefined) {
     updates.push(`required_points = $${index++}`);
     values.push(Number(data.requiredScore));
+  }
+  if (data.questionType !== undefined) {
+    updates.push(`question_type = $${index++}`);
+    values.push(data.questionType === 'fill' ? 'fill' : 'choice');
   }
 
   if (!updates.length) return null;

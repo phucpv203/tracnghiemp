@@ -20,6 +20,8 @@ import StudyPage from './pages/StudyPage';
 import GuestStudyPage from './pages/GuestStudyPage';
 import TopUpPage from './pages/TopUpPage';
 import ExamPage from './pages/ExamPage';
+import FillStudyPage from './pages/FillStudyPage';
+import FillExamPage from './pages/FillExamPage';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminCourses from './pages/AdminCourses';
@@ -219,6 +221,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <ExamPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/fill-study/:courseId"
+            element={
+              <ProtectedRoute>
+                <FillStudyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/fill-exam/:courseId"
+            element={
+              <ProtectedRoute>
+                <FillExamPage />
               </ProtectedRoute>
             }
           />

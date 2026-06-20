@@ -6,6 +6,11 @@ import { query } from '../services/db.js';
 import { getQuestionsWithAnswers } from '../services/questionsService.js';
 import { requireAuth } from '../middleware/auth.js';
 
+// Helper: so sánh đáp án kiểu fill (không phân biệt hoa-thường, trim whitespace)
+function normalizeText(s) {
+  return String(s).trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 const router = Router();
 
 router.use(requireAuth);
@@ -29,7 +34,7 @@ router.get('/:courseId', async (req, res) => {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    const selectedQuestions = shuffled.slice(0, 80);
+    const selectedQuestions = shuffled.slice(0, course.question_type === 'fill' ? 20 : 80);
 
     const exam = {
       courseId: course.id,
@@ -67,18 +72,35 @@ router.post('/:courseId/submit', async (req, res) => {
 
     let correctCount = 0;
 
+    // Xác định loại đề dựa vào course
+    const isFillType = courseRes.rows[0].question_type === 'fill';
+
     for (const answer of answers) {
       const questionRes = await query(
         'SELECT id FROM questions WHERE id = $1 AND course_id = $2',
         [Number(answer.questionId), Number(req.params.courseId)]
       );
       if (questionRes.rows.length) {
-        const ansRes = await query(
-          'SELECT id FROM answers WHERE question_id = $1 AND is_correct = true',
-          [Number(answer.questionId)]
-        );
-        if (ansRes.rows.length && Number(ansRes.rows[0].id) === Number(answer.answerId)) {
-          correctCount++;
+        if (isFillType) {
+          // Kiểu điền đáp án: so sánh text (answer.answer[0].answer_text)
+          const ansRes = await query(
+            'SELECT answer_text FROM answers WHERE question_id = $1 AND is_correct = true ORDER BY id LIMIT 1',
+            [Number(answer.questionId)]
+          );
+          if (ansRes.rows.length) {
+            const correctText = ansRes.rows[0].answer_text;
+            if (normalizeText(answer.text) === normalizeText(correctText)) {
+              correctCount++;
+            }
+          }
+        } else {
+          const ansRes = await query(
+            'SELECT id FROM answers WHERE question_id = $1 AND is_correct = true',
+            [Number(answer.questionId)]
+          );
+          if (ansRes.rows.length && Number(ansRes.rows[0].id) === Number(answer.answerId)) {
+            correctCount++;
+          }
         }
       }
     }

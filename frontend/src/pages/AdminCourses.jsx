@@ -8,7 +8,7 @@ export default function AdminCourses() {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newCourse, setNewCourse] = useState({ title: '', description: '', requiredScore: 0 });
+  const [newCourse, setNewCourse] = useState({ title: '', description: '', requiredScore: 0, questionType: 'choice' });
   const [uploadCourseId, setUploadCourseId] = useState('');
   const [uploadFile, setUploadFile] = useState(null);
   const [importMessage, setImportMessage] = useState('');
@@ -32,14 +32,15 @@ export default function AdminCourses() {
   const create = async () => {
     const res = await apiService.createCourse(newCourse);
     setCourses((s) => [...s, res.course]);
-    setNewCourse({ title: '', description: '', requiredScore: 0 });
+    setNewCourse({ title: '', description: '', requiredScore: 0, questionType: 'choice' });
   };
 
   const update = async (id) => {
     const title = document.getElementById(`title-${id}`).value;
     const description = document.getElementById(`description-${id}`).value;
     const requiredScore = Number(document.getElementById(`required-${id}`).value);
-    const res = await apiService.updateCourse(id, { title, description, requiredScore });
+    const questionType = document.getElementById(`qtype-${id}`).value;
+    const res = await apiService.updateCourse(id, { title, description, requiredScore, questionType });
     setCourses((s) => s.map((c) => (c.id === id ? res.course : c)));
   };
 
@@ -118,6 +119,14 @@ export default function AdminCourses() {
             value={newCourse.requiredScore}
             onChange={(e) => setNewCourse((s) => ({ ...s, requiredScore: Number(e.target.value) }))}
           />
+          <select
+            className="mt-3 w-full px-3 py-2"
+            value={newCourse.questionType}
+            onChange={(e) => setNewCourse((s) => ({ ...s, questionType: e.target.value }))}
+          >
+            <option value="choice">Trắc nghiệm (chọn đáp án)</option>
+            <option value="fill">Điền đáp án (xem hình)</option>
+          </select>
           <button className="mt-3 rounded-md bg-emerald-600 px-4 py-2 text-white" onClick={create}>Tạo môn học</button>
         </div>
 
@@ -183,6 +192,14 @@ export default function AdminCourses() {
               className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
               placeholder="Điểm mở khóa"
             />
+            <select
+              id={`qtype-${c.id}`}
+              defaultValue={c.question_type || 'choice'}
+              className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
+            >
+              <option value="choice">Trắc nghiệm (chọn đáp án)</option>
+              <option value="fill">Điền đáp án (xem hình)</option>
+            </select>
             <div className="mt-3 flex gap-2">
               <button onClick={() => update(c.id)} className="rounded-md bg-sky-600 px-3 py-1 text-white">Lưu</button>
               <button
