@@ -62,7 +62,12 @@ export default function FillExamPage() {
         setCorrectAnswers(correct);
       } catch (error) {
         console.error('Failed to load exam:', error);
-        alert('Không thể tải đề thi.');
+        if (error.code === 'COURSE_LOCKED') {
+          alert(error.message);
+          navigate('/trang-chu');
+        } else {
+          alert('Không thể tải đề thi.');
+        }
       } finally {
         setLoading(false);
       }

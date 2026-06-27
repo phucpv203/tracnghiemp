@@ -38,7 +38,12 @@ export default function FillStudyPage() {
         setQuestions(data.course.questions || []);
       } catch (error) {
         console.error('Failed to load:', error);
-        alert('Không thể tải dữ liệu học tập.');
+        if (error.code === 'COURSE_LOCKED') {
+          alert(error.message);
+          navigate('/trang-chu');
+        } else {
+          alert('Không thể tải dữ liệu học tập.');
+        }
       }
     };
     loadData();

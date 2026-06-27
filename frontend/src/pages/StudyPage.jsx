@@ -54,7 +54,12 @@ export default function StudyPage() {
         setShuffledAnswersMap(shuffled);
       } catch (error) {
         console.error('Failed to load study data:', error);
-        alert('Không thể tải dữ liệu học tập. Vui lòng kiểm tra kết nối hoặc thử lại sau.');
+        if (error.code === 'COURSE_LOCKED') {
+          alert(error.message);
+          navigate('/trang-chu');
+        } else {
+          alert('Không thể tải dữ liệu học tập. Vui lòng kiểm tra kết nối hoặc thử lại sau.');
+        }
       }
     };
     loadStudyData();

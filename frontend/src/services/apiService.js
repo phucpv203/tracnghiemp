@@ -4,6 +4,7 @@
  * Tự động gắn Authorization: Bearer <token> từ localStorage.
  * Tự động gắn X-Device-Id header từ deviceService.
  * Khi backend trả 401 (token sai/hết hạn/phiên bị thay thế) → thông báo auth.
+ * Khi backend trả 403 với code=COURSE_LOCKED → ném lỗi kèm code để frontend xử lý.
  */
 import { authService } from './authService';
 import { deviceService } from './deviceService';
@@ -62,6 +63,14 @@ async function request(path, options = {}) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
     console.error(`[api] ${method} ${path} error:`, errorData);
+
+    // 403 COURSE_LOCKED - ném lỗi với code để frontend xử lý
+    if (response.status === 403 && errorData?.code === 'COURSE_LOCKED') {
+      const err = new Error(errorData?.message || 'Không có quyền truy cập môn học.');
+      err.code = 'COURSE_LOCKED';
+      throw err;
+    }
+
     throw new Error(errorData?.message || `API ${response.status}: ${response.statusText}`);
   }
 
@@ -69,6 +78,7 @@ async function request(path, options = {}) {
 }
 
 export const apiService = {
+
   // ===== Auth =====
   login: (payload) => request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
   register: (payload) => request('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
@@ -77,6 +87,9 @@ export const apiService = {
   forgotPassword: (payload) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify(payload) }),
   resetPassword: (payload) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify(payload) }),
   requestDeviceOtp: (payload) => request('/auth/request-device-otp', { method: 'POST', body: JSON.stringify(payload) }),
+  getCourseStudy: (courseId) => request(`/courses/${courseId}/study`),
+
+
   verifyDeviceOtp: (payload) => request('/auth/verify-device-otp', { method: 'POST', body: JSON.stringify(payload) }),
   me: () => request('/auth/me'),
   logout: () => request('/auth/logout', { method: 'POST' }),

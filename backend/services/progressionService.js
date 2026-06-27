@@ -32,6 +32,34 @@ export async function getPrerequisites(courseId) {
   return result.rows;
 }
 
+/**
+ * isCourseAccessible - Kiểm tra user có quyền truy cập môn học không
+ * 
+ * Môn học được coi là "có thể truy cập" nếu:
+ * 1. required_points = 0 (miễn phí) → luôn cho phép
+ * 2. User đã mở khóa (có user_progress với status != 'locked')
+ * 3. User là admin
+ */
+export async function isCourseAccessible(userId, courseId) {
+  const courseRes = await query('SELECT required_points FROM courses WHERE id = $1', [Number(courseId)]);
+  if (!courseRes.rows.length) return false;
+
+  const requiredPoints = Number(courseRes.rows[0].required_points);
+
+  // Miễn phí → luôn cho phép
+  if (requiredPoints === 0) return true;
+
+  // Kiểm tra user đã mở khóa chưa
+  const progressRes = await query(
+    'SELECT status FROM user_progress WHERE user_id = $1 AND course_id = $2',
+    [Number(userId), Number(courseId)]
+  );
+
+  if (progressRes.rows.length && progressRes.rows[0].status !== 'locked') return true;
+
+  return false;
+}
+
 export async function canUnlockCourse(userId, courseId) {
   const prereqs = await getPrerequisites(courseId);
   if (!prereqs.length) return true;

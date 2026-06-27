@@ -1,9 +1,12 @@
 /**
  * Exam Routes - Các endpoint liên quan đến bài thi
+ * 
+ * Tất cả các route đều yêu cầu đăng nhập + đã mở khóa môn học
  */
 import { Router } from 'express';
 import { query } from '../services/db.js';
 import { getQuestionsWithAnswers } from '../services/questionsService.js';
+import { isCourseAccessible } from '../services/progressionService.js';
 import { requireAuth } from '../middleware/auth.js';
 
 // Helper: so sánh đáp án kiểu fill (không phân biệt hoa-thường, trim whitespace)
@@ -17,6 +20,7 @@ router.use(requireAuth);
 
 /**
  * GET /exams/:courseId
+ * Lấy đề thi cho môn học (cần đã mở khóa)
  */
 router.get('/:courseId', async (req, res) => {
   try {
@@ -26,6 +30,18 @@ router.get('/:courseId', async (req, res) => {
     }
 
     const course = courseRes.rows[0];
+
+    // Kiểm tra quyền truy cập (admin luôn được phép)
+    if (req.user.role !== 'admin') {
+      const accessible = await isCourseAccessible(req.user.id, course.id);
+      if (!accessible) {
+        return res.status(403).json({
+          message: 'Bạn chưa mở khóa môn học này. Vui lòng mở khóa để làm bài thi.',
+          code: 'COURSE_LOCKED'
+        });
+      }
+    }
+
     const questions = await getQuestionsWithAnswers(course.id);
 
     // Fisher-Yates shuffle để xáo trộn ngẫu nhiên đều, tránh thiên vị
@@ -53,7 +69,7 @@ router.get('/:courseId', async (req, res) => {
 /**
  * POST /exams/:courseId/submit
  * Nộp bài thi và lưu kết quả
- *
+ * 
  * userId lấy từ token (req.user.id) thay vì hardcode = 1
  */
 router.post('/:courseId/submit', async (req, res) => {
@@ -68,6 +84,17 @@ router.post('/:courseId/submit', async (req, res) => {
     const courseRes = await query('SELECT * FROM courses WHERE id = $1', [Number(req.params.courseId)]);
     if (!courseRes.rows.length) {
       return res.status(404).json({ message: 'Không tìm thấy môn học.' });
+    }
+
+    // Kiểm tra quyền truy cập (admin luôn được phép)
+    if (req.user.role !== 'admin') {
+      const accessible = await isCourseAccessible(req.user.id, Number(req.params.courseId));
+      if (!accessible) {
+        return res.status(403).json({
+          message: 'Bạn chưa mở khóa môn học này.',
+          code: 'COURSE_LOCKED'
+        });
+      }
     }
 
     let correctCount = 0;
@@ -163,3 +190,4 @@ router.post('/:courseId/submit', async (req, res) => {
 });
 
 export default router;
+

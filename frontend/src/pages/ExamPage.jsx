@@ -73,7 +73,12 @@ export default function ExamPage() {
         setShuffledAnswersMap(shuffled);
       } catch (error) {
         console.error('Failed to load exam:', error);
-        alert('Không thể tải đề thi. Vui lòng kiểm tra kết nối hoặc thử lại sau.');
+        if (error.code === 'COURSE_LOCKED') {
+          alert(error.message);
+          navigate('/trang-chu');
+        } else {
+          alert('Không thể tải đề thi. Vui lòng kiểm tra kết nối hoặc thử lại sau.');
+        }
       } finally {
         setLoading(false);
       }
