@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState, useContext, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
@@ -15,17 +15,30 @@ export default function AdminUsers() {
   const [userDevices, setUserDevices] = useState({});
   const [expandedDevices, setExpandedDevices] = useState({});
   const [deletingDeviceId, setDeletingDeviceId] = useState(null);
+  const [searching, setSearching] = useState(false);
 
-  const fetchUsers = (search) => {
-    apiService.getUsers(search || undefined).then((res) => {
+  const fetchUsers = async (search) => {
+    setSearching(true);
+    try {
+      const res = await apiService.getUsers(search || undefined);
+      // Kiểm tra race condition: nếu searchTerm đã thay đổi thì bỏ qua kết quả cũ
+      if (search !== undefined && search !== searchTermRef.current) return;
       setUsers(res.users || []);
       const initialPoints = {};
       (res.users || []).forEach((user) => {
         initialPoints[user.id] = user.points ?? 0;
       });
       setPoints(initialPoints);
-    });
+    } finally {
+      setSearching(false);
+    }
   };
+
+  // Ref để theo dõi searchTerm hiện tại, tránh race condition
+  const searchTermRef = useRef('');
+
+  // Debounce timer ref
+  const debounceTimerRef = useRef(null);
 
   useEffect(() => {
     fetchUsers();
@@ -34,8 +47,27 @@ export default function AdminUsers() {
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    fetchUsers(value);
+    searchTermRef.current = value;
+
+    // Clear debounce timer cũ
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Debounce 300ms trước khi gọi API
+    debounceTimerRef.current = setTimeout(() => {
+      fetchUsers(value);
+    }, 300);
   };
+
+  // Cleanup debounce timer khi component unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleDeleteUser = async (userId, userName) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xoá người dùng "${userName}"? Hành động này không thể hoàn tác và sẽ xoá tất cả dữ liệu liên quan (tiến trình, lịch sử thanh toán).`)) {
@@ -147,6 +179,20 @@ export default function AdminUsers() {
           className="w-full rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-5 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-slate-400 focus:outline-none"
         />
       </div>
+
+      {/* Loading indicator */}
+      {searching && (
+        <div className="mb-4 text-center text-sm text-slate-500 dark:text-slate-400">
+          Đang tìm kiếm...
+        </div>
+      )}
+
+      {/* No results */}
+      {!searching && searchTerm && users.length === 0 && (
+        <div className="mt-6 text-center text-slate-500 dark:text-slate-400">
+          <p className="text-lg">Không tìm thấy người dùng nào khớp với từ khóa "<span className="font-semibold">{searchTerm}</span>"</p>
+        </div>
+      )}
 
       <div className="mt-6 space-y-6">
         {users.map((u) => (
