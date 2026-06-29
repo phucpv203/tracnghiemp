@@ -39,8 +39,9 @@ export async function searchUsers(searchTerm) {
      LEFT JOIN user_progress up ON up.user_id = u.id
      LEFT JOIN courses c ON c.id = up.course_id
      WHERE u.name ILIKE $1 OR u.email ILIKE $1
-     GROUP BY u.id
-     ORDER BY u.id`
+      GROUP BY u.id
+      ORDER BY u.id`,
+    [term]
   );
   return result.rows.map((row) => ({
     ...row,
