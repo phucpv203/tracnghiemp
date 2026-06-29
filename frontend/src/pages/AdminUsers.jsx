@@ -17,28 +17,34 @@ export default function AdminUsers() {
   const [deletingDeviceId, setDeletingDeviceId] = useState(null);
   const [searching, setSearching] = useState(false);
 
+  // Đếm số thứ tự request để tránh race condition
+  const fetchIdRef = useRef(0);
+  const debounceTimerRef = useRef(null);
+
   const fetchUsers = async (search) => {
+    // Tăng số thứ tự request, request nào mới hơn sẽ được giữ lại
+    const currentFetchId = ++fetchIdRef.current;
     setSearching(true);
     try {
       const res = await apiService.getUsers(search || undefined);
-      // Kiểm tra race condition: nếu searchTerm đã thay đổi thì bỏ qua kết quả cũ
-      if (search !== undefined && search !== searchTermRef.current) return;
+      // Nếu có request mới hơn được gọi, bỏ qua kết quả này
+      if (currentFetchId !== fetchIdRef.current) return;
       setUsers(res.users || []);
       const initialPoints = {};
       (res.users || []).forEach((user) => {
         initialPoints[user.id] = user.points ?? 0;
       });
       setPoints(initialPoints);
+    } catch (err) {
+      if (currentFetchId !== fetchIdRef.current) return;
+      setToast({ message: err.message || 'Lỗi khi tải danh sách người dùng.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
     } finally {
-      setSearching(false);
+      if (currentFetchId === fetchIdRef.current) {
+        setSearching(false);
+      }
     }
   };
-
-  // Ref để theo dõi searchTerm hiện tại, tránh race condition
-  const searchTermRef = useRef('');
-
-  // Debounce timer ref
-  const debounceTimerRef = useRef(null);
 
   useEffect(() => {
     fetchUsers();
@@ -47,7 +53,6 @@ export default function AdminUsers() {
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    searchTermRef.current = value;
 
     // Clear debounce timer cũ
     if (debounceTimerRef.current) {
