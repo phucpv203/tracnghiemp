@@ -37,11 +37,22 @@ async function request(path, options = {}) {
   const method = options.method || 'GET';
   console.log(`[api] ${method} ${path}`, { hasToken: !!token });
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers,
-    credentials: 'include',
-    ...options,
-  });
+  // Tách signal ra khỏi options để tránh override headers/credentials
+  const { signal, ...fetchOptions } = options;
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      headers,
+      credentials: 'include',
+      ...fetchOptions,
+      signal,
+    });
+  } catch (err) {
+    // AbortError (khi dùng AbortController) - không phải lỗi thật
+    if (err.name === 'AbortError') throw err;
+    throw new Error(err.message || 'Lỗi kết nối đến server.');
+  }
 
   console.log(`[api] ${method} ${path} → ${response.status}`);
 
@@ -123,9 +134,9 @@ export const apiService = {
   toggleFavorite: (courseId) => request('/favorites/toggle', { method: 'POST', body: JSON.stringify({ courseId }) }),
 
   // ===== Admin =====
-  getUsers: (searchTerm) => {
+  getUsers: (searchTerm, options = {}) => {
     const query = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-    return request(`/admin/users${query}`);
+    return request(`/admin/users${query}`, options);
   },
   updateUser: (id, data) => request(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   getAdminCourses: (searchTerm) => {

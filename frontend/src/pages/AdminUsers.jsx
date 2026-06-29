@@ -17,18 +17,22 @@ export default function AdminUsers() {
   const [deletingDeviceId, setDeletingDeviceId] = useState(null);
   const [searching, setSearching] = useState(false);
 
-  // Đếm số thứ tự request để tránh race condition
-  const fetchIdRef = useRef(0);
   const debounceTimerRef = useRef(null);
+  // Dùng AbortController để hủy request cũ khi có request mới
+  const abortControllerRef = useRef(null);
 
   const fetchUsers = async (search) => {
-    // Tăng số thứ tự request, request nào mới hơn sẽ được giữ lại
-    const currentFetchId = ++fetchIdRef.current;
+    // Hủy request cũ nếu đang chạy
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setSearching(true);
     try {
-      const res = await apiService.getUsers(search || undefined);
-      // Nếu có request mới hơn được gọi, bỏ qua kết quả này
-      if (currentFetchId !== fetchIdRef.current) return;
+      const res = await apiService.getUsers(search || undefined, { signal: controller.signal });
       setUsers(res.users || []);
       const initialPoints = {};
       (res.users || []).forEach((user) => {
@@ -36,18 +40,22 @@ export default function AdminUsers() {
       });
       setPoints(initialPoints);
     } catch (err) {
-      if (currentFetchId !== fetchIdRef.current) return;
+      // Bỏ qua lỗi do abort (khi có request mới hơn)
+      if (err.name === 'AbortError') return;
       setToast({ message: err.message || 'Lỗi khi tải danh sách người dùng.', type: 'error' });
       setTimeout(() => setToast(null), 3000);
     } finally {
-      if (currentFetchId === fetchIdRef.current) {
-        setSearching(false);
-      }
+      setSearching(false);
     }
   };
 
   useEffect(() => {
     fetchUsers();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
   const handleSearch = (e) => {
@@ -70,6 +78,9 @@ export default function AdminUsers() {
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
   }, []);
