@@ -168,14 +168,6 @@ router.post('/:courseId/submit', async (req, res) => {
       );
     }
 
-    // Cộng điểm cho user khi pass (thưởng)
-    if (passed) {
-      await query(
-        'UPDATE users SET points = points + $1, updated_at = NOW() WHERE id = $2',
-        [Math.round(score / 10), userId]
-      );
-    }
-
     res.json({
       courseId: req.params.courseId,
       score,
