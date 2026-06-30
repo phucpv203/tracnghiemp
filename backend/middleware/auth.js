@@ -63,12 +63,13 @@ export async function requireAuth(req, res, next) {
     const user = result.rows[0];
 
     // Kiểm tra device (nếu bảng user_devices tồn tại)
+    // Cho phép 2 thiết bị: 1 desktop + 1 mobile
     const hasDevices = await checkDevicesTable();
     if (hasDevices) {
       const deviceId = req.headers['x-device-id'];
-      const registeredDevice = await getDeviceByUserId(user.id);
+      const devices = await getDeviceByUserId(user.id);
 
-      if (registeredDevice) {
+      if (devices.length > 0) {
         // Nếu user có device trong DB mà request không gửi device_id hoặc gửi sai
         if (!deviceId) {
           return res.status(401).json({
@@ -76,7 +77,10 @@ export async function requireAuth(req, res, next) {
             code: 'SESSION_REPLACED',
           });
         }
-        if (registeredDevice.device_id !== deviceId) {
+
+        // Kiểm tra xem deviceId có nằm trong danh sách devices của user không
+        const matchedDevice = devices.find(d => d.device_id === deviceId);
+        if (!matchedDevice) {
           return res.status(401).json({
             message: 'Tài khoản này đã được đăng nhập trên thiết bị khác. Vui lòng đăng nhập lại.',
             code: 'SESSION_REPLACED',

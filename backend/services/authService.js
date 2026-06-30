@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from './db.js';
-import { getDeviceByUserId, getDeviceByDeviceId, createDevice, replaceDevice } from './deviceService.js';
+import { getDeviceByUserId, getDeviceByUserIdAndType, createOrUpdateDevice, replaceDevice } from './deviceService.js';
 
 const SECRET = process.env.JWT_SECRET;
 if (!SECRET) {
@@ -63,11 +63,21 @@ export async function registerUser({ name, email, password }) {
   };
 }
 
+function detectDeviceType(deviceName) {
+  const name = (deviceName || '').toLowerCase();
+  if (/android|ios|iphone|ipad|ipod|mobile/i.test(name)) {
+    return 'mobile';
+  }
+  return 'desktop';
+}
+
 /**
  * Đăng nhập có kiểm tra thiết bị
- * - Nếu user chưa có device nào → tạo mới, login ok
- * - Nếu device gửi lên khớp với device trong DB → login ok
- * - Nếu không khớp → throw error với thông tin device cũ (code: DEVICE_CONFLICT)
+ * - Mỗi user được phép có 2 device: 1 điện thoại + 1 máy tính
+ * - Nếu chưa có device nào → tạo mới, login ok
+ * - Nếu device gửi lên khớp với device cùng loại trong DB → login ok
+ * - Nếu device khác loại đã tồn tại → vẫn cho login (cập nhật device cùng loại)
+ * - Nếu cùng loại nhưng khác device_id → báo conflict
  */
 export async function loginUser({ email, password, deviceId, deviceName }) {
   const result = await query(
@@ -84,26 +94,28 @@ export async function loginUser({ email, password, deviceId, deviceName }) {
     const hasDevices = await checkDevicesTable();
 
     if (hasDevices && deviceId) {
-      const existingDevice = await getDeviceByUserId(user.id);
+      const deviceType = detectDeviceType(deviceName);
+      const existingDevice = await getDeviceByUserIdAndType(user.id, deviceType);
 
       if (existingDevice) {
-        // User đã có thiết bị trong DB
+        // Đã có device cùng loại trong DB
         if (existingDevice.device_id === deviceId) {
-          // Cùng thiết bị → login bình thường, cập nhật tên thiết bị
-          await createDevice(user.id, deviceId, deviceName || 'Unknown device');
+          // Cùng device → login bình thường, cập nhật tên
+          await createOrUpdateDevice(user.id, deviceId, deviceName || 'Unknown device');
         } else {
-          // Khác thiết bị → báo conflict
-          const err = new Error(`Tài khoản đang được dùng trên "${existingDevice.device_name}". Bạn có muốn xóa thiết bị đó để đăng nhập trên máy này không?`);
+          // Khác device cùng loại → báo conflict
+          const err = new Error(`Tài khoản đang được dùng trên "${existingDevice.device_name}" (${deviceType === 'mobile' ? 'điện thoại' : 'máy tính'}). Bạn có muốn thay thế thiết bị này để đăng nhập không?`);
           err.code = 'DEVICE_CONFLICT';
           err.existingDevice = {
             deviceId: existingDevice.device_id,
             deviceName: existingDevice.device_name,
+            deviceType: existingDevice.device_type,
           };
           throw err;
         }
       } else {
-        // Chưa có device → tạo mới
-        await createDevice(user.id, deviceId, deviceName || 'Unknown device');
+        // Chưa có device cùng loại → tạo mới (hoặc thay thế nếu đã có device khác loại)
+        await createOrUpdateDevice(user.id, deviceId, deviceName || 'Unknown device');
       }
     }
   }

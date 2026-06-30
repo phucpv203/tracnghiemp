@@ -323,11 +323,15 @@ router.post('/request-device-otp', async (req, res) => {
     );
     
     // Gửi email OTP xác nhận đổi thiết bị
-    const existingDevice = await query(
-      'SELECT device_name FROM user_devices WHERE user_id = $1',
+    const devices = await query(
+      'SELECT device_name, device_type FROM user_devices WHERE user_id = $1',
       [user.id]
     );
-    const currentDeviceName = existingDevice.rows[0]?.device_name || 'thiết bị hiện tại';
+    const deviceNames = devices.rows.map(d => {
+      const typeLabel = d.device_type === 'mobile' ? 'điện thoại' : 'máy tính';
+      return `${d.device_name} (${typeLabel})`;
+    });
+    const currentDeviceName = deviceNames.length > 0 ? deviceNames.join(', ') : 'thiết bị hiện tại';
     
     await sendDeviceChangeOtpEmail(email, otp, user.name, currentDeviceName);
     
@@ -462,10 +466,10 @@ router.post('/replace-device', async (req, res) => {
 
 /**
  * POST /auth/logout
+ * Chỉ đăng xuất (xoá token phía client), KHÔNG xoá device cũ
  */
 router.post('/logout', requireAuth, async (req, res) => {
   try {
-    await deleteDeviceByUserId(req.user.id);
     res.json({ message: 'Đăng xuất thành công.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
