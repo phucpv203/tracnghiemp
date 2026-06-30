@@ -8,13 +8,18 @@ import { query } from './db.js';
 
 /**
  * Xác định loại thiết bị dựa trên tên thiết bị
+ * Tên thiết bị có dạng: "Chrome trên Windows", "Firefox trên macOS", "Safari trên iOS", ...
+ * Desktop: Windows, macOS (Mac OS X), Linux
+ * Còn lại: mobile
  */
-function detectDeviceType(deviceName) {
+export function detectDeviceType(deviceName) {
   const name = (deviceName || '').toLowerCase();
-  if (/android|ios|iphone|ipad|ipod|mobile/i.test(name)) {
-    return 'mobile';
+  // Desktop OS
+  if (/windows|mac os|macintosh|linux/i.test(name)) {
+    return 'desktop';
   }
-  return 'desktop';
+  // Còn lại là mobile (Android, iOS, ...)
+  return 'mobile';
 }
 
 export async function getDeviceByUserId(userId) {

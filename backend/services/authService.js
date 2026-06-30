@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { query } from './db.js';
-import { getDeviceByUserId, getDeviceByUserIdAndType, createOrUpdateDevice, replaceDevice } from './deviceService.js';
+import { getDeviceByUserId, getDeviceByUserIdAndType, createOrUpdateDevice, replaceDevice, detectDeviceType } from './deviceService.js';
 
 const SECRET = process.env.JWT_SECRET;
 if (!SECRET) {
@@ -61,14 +61,6 @@ export async function registerUser({ name, email, password }) {
     user: { id: user.id, name: user.name, email: user.email, role: user.role, points: Number(user.points) },
     token,
   };
-}
-
-function detectDeviceType(deviceName) {
-  const name = (deviceName || '').toLowerCase();
-  if (/android|ios|iphone|ipad|ipod|mobile/i.test(name)) {
-    return 'mobile';
-  }
-  return 'desktop';
 }
 
 /**
