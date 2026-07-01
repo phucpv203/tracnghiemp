@@ -224,10 +224,13 @@ export default function StudyPage() {
       if (showExplanation) {
         const correctAnswer = currentQuestion.answers.find(a => a.is_correct);
         const isCorrect = correctAnswer && Number(correctAnswer.id) === Number(selectedAnswer);
+        // Sử dụng shuffledAnswersMap để lấy chữ cái đáp án đúng theo thứ tự hiển thị
+        const displayAnswers = shuffledAnswersMap[currentQuestion.id] || currentQuestion.answers;
+        const correctDisplayIndex = displayAnswers.findIndex(a => a.is_correct);
         resultEl.innerHTML = `
           <span class="${isCorrect ? 'text-blue-600 dark:text-blue-400' : 'text-red-500 dark:text-red-400'} font-semibold">
             ${isCorrect ? '✓ Chính xác!' : '✗ Sai rồi!'} 
-            ${!isCorrect ? `Đáp án đúng: ${String.fromCharCode(65 + currentQuestion.answers.findIndex(a => a.is_correct))}` : ''}
+            ${!isCorrect && correctDisplayIndex !== -1 ? `Đáp án đúng: ${String.fromCharCode(65 + correctDisplayIndex)}` : ''}
           </span>
         `;
       } else {
@@ -253,15 +256,17 @@ export default function StudyPage() {
         return;
       }
       
-      // 1, 2, 3, 4, 5 -> select answer by index (chỉ khi chưa trả lời câu này)
+      // 1, 2, 3, 4, 5 -> select answer by index (theo thứ tự hiển thị đã xáo trộn)
       if (!showExplanation && currentQuestion && currentQuestion.answers) {
         const num = parseInt(e.key, 10);
         if (num >= 1 && num <= 5) {
           const answerIndex = num - 1;
-          if (answerIndex < currentQuestion.answers.length) {
+          // Sử dụng shuffledAnswersMap để lấy đáp án theo đúng thứ tự hiển thị
+          const displayAnswers = shuffledAnswersMap[currentQuestion.id] || currentQuestion.answers;
+          if (answerIndex < displayAnswers.length) {
             e.preventDefault();
             const correctAnswer = currentQuestion.answers.find(a => a.is_correct);
-            handleAnswerClick(currentQuestion.answers[answerIndex].id, correctAnswer);
+            handleAnswerClick(displayAnswers[answerIndex].id, correctAnswer);
           }
         }
       }

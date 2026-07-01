@@ -274,13 +274,15 @@ export default function ExamPage() {
         return;
       }
       
-      // 1, 2, 3, 4, 5 -> select answer by index
+      // 1, 2, 3, 4, 5 -> select answer by index (theo thứ tự hiển thị đã xáo trộn)
       const num = parseInt(e.key, 10);
       if (num >= 1 && num <= 5 && currentQuestion && currentQuestion.answers) {
         const answerIndex = num - 1;
-        if (answerIndex < currentQuestion.answers.length) {
+        // Sử dụng shuffledAnswersMap để lấy đáp án theo đúng thứ tự hiển thị
+        const displayAnswers = shuffledAnswersMap[currentQuestion.id] || currentQuestion.answers;
+        if (answerIndex < displayAnswers.length) {
           e.preventDefault();
-          const answerId = currentQuestion.answers[answerIndex].id;
+          const answerId = displayAnswers[answerIndex].id;
           handleAnswerSelect(answerId);
         }
       }
@@ -288,7 +290,7 @@ export default function ExamPage() {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [submitted, currentQuestionIndex, currentQuestion, answers]);
+  }, [submitted, currentQuestionIndex, currentQuestion, answers, shuffledAnswersMap]);
 
   // Update navigation button handlers
   useEffect(() => {
