@@ -73,13 +73,19 @@ export async function registerUser({ name, email, password }) {
  */
 export async function loginUser({ email, password, deviceId, deviceName }) {
   const result = await query(
-    'SELECT id, name, email, password_hash, role, points FROM users WHERE email = $1',
+    'SELECT id, name, email, password_hash, role, points, last_login FROM users WHERE email = $1',
     [email]
   );
   const user = result.rows[0];
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     throw new Error('Email hoặc mật khẩu không đúng.');
   }
+
+  // Lưu lại last_login cũ (lần đăng nhập trước đó) trước khi cập nhật
+  const previousLastLogin = user.last_login;
+
+  // Ghi nhận thời gian đăng nhập hiện tại
+  await query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
 
   // Admin không bị kiểm tra/ghi nhận thiết bị
   if (user.role !== 'admin') {
@@ -113,6 +119,7 @@ export async function loginUser({ email, password, deviceId, deviceName }) {
   }
 
   const token = await signToken(user);
+
   return {
     user: {
       id: user.id,
@@ -120,6 +127,7 @@ export async function loginUser({ email, password, deviceId, deviceName }) {
       email: user.email,
       role: user.role,
       points: Number(user.points),
+      lastLogin: previousLastLogin, // Trả về lần đăng nhập trước đó, không phải lần hiện tại
     },
     token,
   };
@@ -161,7 +169,7 @@ export async function loginAndReplaceDevice({ email, password, deviceId, deviceN
 
 export async function getUserById(id) {
   const result = await query(
-    'SELECT id, name, email, role, points FROM users WHERE id = $1',
+    'SELECT id, name, email, role, points, last_login FROM users WHERE id = $1',
     [id]
   );
   return result.rows[0] || null;

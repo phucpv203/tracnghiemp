@@ -490,6 +490,7 @@ router.get('/me', requireAuth, async (req, res) => {
         email: user.email,
         role: user.role,
         points: Number(user.points),
+        lastLogin: user.last_login,
       },
     });
   } catch (error) {
