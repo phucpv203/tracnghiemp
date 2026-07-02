@@ -161,4 +161,8 @@ export const apiService = {
   deleteUserDevice: (userId, deviceId) => request(`/admin/users/${userId}/devices/${deviceId}`, { method: 'DELETE' }),
   updateUserScore: (userId, courseId, data) =>
     request(`/admin/users/${userId}/progress/${courseId}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  // ===== Notes =====
+  getNote: () => request('/notes'),
+  updateNote: (content) => request('/notes', { method: 'PUT', body: JSON.stringify({ content }) }),
 };

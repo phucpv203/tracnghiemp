@@ -7,6 +7,7 @@ import progressRoutes from './routes/progress.js';
 import adminRoutes from './routes/admin.js';
 import payosRoutes from './routes/payos.js';
 import favoritesRoutes from './routes/favorites.js';
+import notesRoutes from './routes/notes.js';
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/progress', progressRoutes);
 app.use('/admin', adminRoutes);
 app.use('/payos', payosRoutes);
 app.use('/favorites', favoritesRoutes);
+app.use('/notes', notesRoutes);
 
 app.get('/', (req, res) =>
   res.json({ message: 'Quiz API Gateway is running', env: process.env.NODE_ENV || 'development' })

@@ -24,6 +24,10 @@ export default function DashboardPage() {
   const [toast, setToast] = useState(null); // {message, type: 'success'|'error'}
   const [searchTerm, setSearchTerm] = useState('');   // Từ khóa tìm kiếm môn học
   const [favoriteIds, setFavoriteIds] = useState(new Set()); // Set course_id yêu thích
+  const [note, setNote] = useState('');                // Dòng lưu ý
+  const [editingNote, setEditingNote] = useState(false); // Đang sửa lưu ý
+  const [noteDraft, setNoteDraft] = useState('');      // Bản nháp khi sửa
+  const [savingNote, setSavingNote] = useState(false); // Đang lưu lưu ý
 
   const isAuthenticated = !!user;
 
@@ -59,6 +63,21 @@ export default function DashboardPage() {
     
     loadDashboardData();
   }, [isAuthenticated]);
+
+  // Load note từ API
+  useEffect(() => {
+    const loadNote = async () => {
+      try {
+        const res = await apiService.getNote();
+        if (res?.note) {
+          setNote(res.note.content || '');
+        }
+      } catch (error) {
+        console.error('Failed to load note:', error);
+      }
+    };
+    loadNote();
+  }, []);
   
   // Build map courseId -> progress data for quick lookup
   const progressMap = useMemo(() => {
@@ -141,6 +160,32 @@ export default function DashboardPage() {
       setFavoriteIds(favoriteIds);
       showToast('Không thể cập nhật yêu thích.', 'error');
     }
+  };
+
+  const handleSaveNote = async () => {
+    setSavingNote(true);
+    try {
+      const res = await apiService.updateNote(noteDraft);
+      if (res?.note) {
+        setNote(res.note.content || '');
+      }
+      setEditingNote(false);
+      showToast('Đã lưu lưu ý!', 'success');
+    } catch (error) {
+      showToast(error.message || 'Lỗi khi lưu lưu ý.', 'error');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleCancelEditNote = () => {
+    setNoteDraft(note);
+    setEditingNote(false);
+  };
+
+  const handleStartEditNote = () => {
+    setNoteDraft(note);
+    setEditingNote(true);
   };
 
   const handleUnlock = async (courseId) => {
@@ -240,6 +285,66 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Dòng lưu ý */}
+      {note || isAuthenticated ? (
+        <div className="mb-6">
+          {editingNote ? (
+            <div className="rounded-3xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2">📌 Lưu ý</p>
+                  <textarea
+                    value={noteDraft}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-xl border border-amber-300 dark:border-amber-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-300 dark:focus:ring-amber-600 resize-none"
+                    placeholder="Nhập nội dung lưu ý..."
+                  />
+                </div>
+                <div className="flex flex-col gap-2 flex-shrink-0">
+                  <button
+                    onClick={handleSaveNote}
+                    disabled={savingNote}
+                    className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 disabled:bg-amber-300"
+                  >
+                    {savingNote ? 'Đang lưu...' : 'Lưu'}
+                  </button>
+                  <button
+                    onClick={handleCancelEditNote}
+                    className="rounded-xl border border-amber-300 dark:border-amber-600 px-4 py-2 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : note ? (
+            <div className="group relative rounded-3xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-lg flex-shrink-0 mt-0.5">📌</span>
+                <p className="flex-1 text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">{note}</p>
+                {isAuthenticated && user?.role === 'admin' && (
+                  <button
+                    onClick={handleStartEditNote}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 rounded-xl bg-amber-100 dark:bg-amber-800/50 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-700/50"
+                    title="Sửa lưu ý"
+                  >
+                    ✏️ Sửa
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : isAuthenticated && user?.role === 'admin' && (
+            <button
+              onClick={handleStartEditNote}
+              className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-600 p-4 w-full text-sm text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-600 dark:hover:text-slate-300 transition"
+            >
+              + Thêm lưu ý
+            </button>
+          )}
+        </div>
+      ) : null}
 
       {/* Thanh tìm kiếm môn học */}
       <div className="mb-6">
