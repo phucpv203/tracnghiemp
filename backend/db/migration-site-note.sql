@@ -1,10 +1,19 @@
--- Migration: Thêm bảng site_notes để lưu dòng lưu ý trên dashboard
-CREATE TABLE IF NOT EXISTS site_notes (
+-- Migration: Thêm bảng site_notes để lưu dòng lưu ý riêng cho từng trang
+-- page: 'dashboard' | 'login' | 'register'
+
+-- Xoá bảng cũ nếu tồn tại (dữ liệu lưu ý cũ sẽ mất, cần nhập lại)
+DROP TABLE IF EXISTS site_notes;
+
+-- Tạo bảng mới
+CREATE TABLE site_notes (
   id BIGSERIAL PRIMARY KEY,
+  page VARCHAR(20) NOT NULL UNIQUE,
   content TEXT NOT NULL DEFAULT '',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Insert một dòng mặc định nếu chưa có
-INSERT INTO site_notes (content)
-SELECT '' WHERE NOT EXISTS (SELECT 1 FROM site_notes);
+-- Insert 3 dòng mặc định
+INSERT INTO site_notes (page, content) VALUES
+  ('dashboard', ''),
+  ('login', ''),
+  ('register', '');

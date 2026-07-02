@@ -68,7 +68,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadNote = async () => {
       try {
-        const res = await apiService.getNote();
+        const res = await apiService.getNote('dashboard');
         if (res?.note) {
           setNote(res.note.content || '');
         }
@@ -165,7 +165,7 @@ export default function DashboardPage() {
   const handleSaveNote = async () => {
     setSavingNote(true);
     try {
-      const res = await apiService.updateNote(noteDraft);
+      const res = await apiService.updateNote('dashboard', noteDraft);
       if (res?.note) {
         setNote(res.note.content || '');
       }

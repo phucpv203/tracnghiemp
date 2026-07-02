@@ -163,6 +163,7 @@ export const apiService = {
     request(`/admin/users/${userId}/progress/${courseId}`, { method: 'PUT', body: JSON.stringify(data) }),
 
   // ===== Notes =====
-  getNote: () => request('/notes'),
-  updateNote: (content) => request('/notes', { method: 'PUT', body: JSON.stringify({ content }) }),
+  getNote: (page = 'dashboard') => request(`/notes?page=${page}`),
+  getAllNotes: () => request('/notes/all'),
+  updateNote: (page, content) => request(`/notes?page=${page}`, { method: 'PUT', body: JSON.stringify({ content }) }),
 };

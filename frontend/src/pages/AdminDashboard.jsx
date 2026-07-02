@@ -30,7 +30,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link to="/admin/users" className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 hover:shadow-md">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Quản lý tài khoản</h2>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Chỉnh sửa, thay đổi role và xóa (demo).</p>
@@ -39,6 +39,11 @@ export default function AdminDashboard() {
         <Link to="/admin/courses" className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 hover:shadow-md">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Quản lý môn học & câu hỏi</h2>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Thêm/Chỉnh sửa môn học, thêm câu hỏi.</p>
+        </Link>
+
+        <Link to="/admin/note" className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 hover:shadow-md">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Quản lý lưu ý</h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Chỉnh sửa dòng lưu ý hiển thị trên trang.</p>
         </Link>
       </div>
     </main>

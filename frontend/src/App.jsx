@@ -26,6 +26,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminCourses from './pages/AdminCourses';
 import AdminEditQuestions from './pages/AdminEditQuestions';
+import AdminNote from './pages/AdminNote';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 import { authService } from './services/authService';
@@ -197,6 +198,14 @@ function App() {
             element={
               <AdminProtectedRoute>
                 <AdminEditQuestions />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/note"
+            element={
+              <AdminProtectedRoute>
+                <AdminNote />
               </AdminProtectedRoute>
             }
           />

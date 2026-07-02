@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { deviceService } from '../services/deviceService';
 import { AuthContext } from '../App';
+import NoteBanner from '../components/NoteBanner';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -78,6 +79,7 @@ export default function LoginPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12 sm:px-6">
       <div className="w-full rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10">
+        <NoteBanner page="login" />
         <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Đăng nhập</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Đăng nhập để tiếp tục ôn thi trắc nghiệm.</p>
 
