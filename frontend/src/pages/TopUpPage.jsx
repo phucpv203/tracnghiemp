@@ -8,7 +8,7 @@
  * 4. Kiểm tra trạng thái thanh toán và cộng điểm
  */
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
 
@@ -104,7 +104,16 @@ export default function TopUpPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Nạp thêm điểm</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">Xin chào, {user?.name || user?.email}</h1>
           <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Chọn gói điểm để nạp vào tài khoản. <strong>NẾU GẶP VẤN ĐỀ KHI NẠP ĐIỂM LIÊN HỆ ZALO: 0966453217</strong> 
+            Chọn gói điểm để nạp vào tài khoản.{' '}
+            <Link
+              to="/lien-he"
+              className="inline-flex items-center gap-1.5 font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.49 10.04c-.27-.11-.55-.16-.84-.16h-1.4v3.38h1.4c.29 0 .57-.05.84-.16.27-.11.5-.26.7-.46.2-.2.35-.43.46-.7.11-.27.16-.56.16-.87 0-.31-.05-.6-.16-.87-.11-.27-.26-.5-.46-.7-.2-.2-.43-.35-.7-.46zM12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm-.5 16.54H8.25V7.46h3.25c.69 0 1.33.13 1.92.39.59.26 1.1.62 1.53 1.08.43.46.77 1 1.01 1.63.24.63.36 1.32.36 2.07 0 .75-.12 1.44-.36 2.07-.24.63-.58 1.17-1.01 1.63-.43.46-.94.82-1.53 1.08-.59.26-1.23.39-1.92.39zm5.5-2.89c-.11.27-.26.5-.46.7-.2.2-.43.35-.7.46-.27.11-.56.16-.86.16-.3 0-.59-.05-.86-.16-.27-.11-.5-.26-.7-.46-.2-.2-.35-.43-.46-.7-.11-.27-.16-.56-.16-.87 0-.31.05-.6.16-.87.11-.27.26-.5.46-.7.2-.2.43-.35.7-.46.27-.11.56-.16.86-.16.3 0 .59.05.86.16.27.11.5.26.7.46.2.2.35.43.46.7.11.27.16.56.16.87 0 .31-.05.6-.16.87z"/>
+              </svg>
+              ZALO
+            </Link>
           </p>
         </div>
         <div className="flex items-center gap-4">

@@ -15,6 +15,7 @@ import RegisterPage from './pages/RegisterPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DeviceChangeOtpPage from './pages/DeviceChangeOtpPage';
+import ContactPage from './pages/ContactPage';
 import DashboardPage from './pages/DashboardPage';
 import StudyPage from './pages/StudyPage';
 import GuestStudyPage from './pages/GuestStudyPage';
@@ -167,6 +168,7 @@ function App() {
           <Route path="/verify-email" element={user ? <Navigate to="/trang-chu" replace /> : <VerifyEmailPage />} />
           <Route path="/forgot-password" element={user ? <Navigate to="/trang-chu" replace /> : <ForgotPasswordPage />} />
           <Route path="/device-change-otp" element={user ? <Navigate to="/trang-chu" replace /> : <DeviceChangeOtpPage />} />
+          <Route path="/lien-he" element={<ContactPage />} />
           <Route path="/trang-chu" element={<DashboardPage />} />
           <Route path="/preview/:courseId" element={<GuestStudyPage />} />
           <Route
