@@ -104,7 +104,7 @@ export default function TopUpPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Nạp thêm điểm</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">Xin chào, {user?.name || user?.email}</h1>
           <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Chọn gói điểm để nạp vào tài khoản.{' '}
+            Chọn gói điểm để nạp vào tài khoản.<p className="flex-1 text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">NẾU GẶP VẤN ĐỀ KHI NẠP ĐIỂM LIÊN HỆ</p>{' '}
             <Link
               to="/lien-he"
               className="inline-flex items-center gap-1.5 font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition"
