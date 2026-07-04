@@ -15,7 +15,7 @@ export default function DeviceChangeOtpPage() {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [sending, setSending] = useState(false);
-  const [step, setStep] = useState(email && password ? 'otp' : 'email'); // 'email' | 'otp' | 'limit'
+  const [step, setStep] = useState(email && password ? 'confirm' : 'email'); // 'email' | 'confirm' | 'otp' | 'limit'
   const [emailInput, setEmailInput] = useState(email || '');
   const [passwordInput, setPasswordInput] = useState(password || '');
   const [remainingDays, setRemainingDays] = useState(0);
@@ -33,13 +33,6 @@ export default function DeviceChangeOtpPage() {
     };
   }, []);
 
-  // Tự động gửi OTP khi có sẵn email + password từ LoginPage
-  useEffect(() => {
-    if (email && password) {
-      handleRequestOtp();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const startCountdown = () => {
     // Clear interval cũ nếu có
@@ -189,6 +182,56 @@ export default function DeviceChangeOtpPage() {
     );
   }
 
+  // Step: Confirm (hiển thị nút Đồng ý đổi thiết bị trước, chưa gửi OTP)
+  if (step === 'confirm') {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12 sm:px-6">
+        <div className="w-full max-w-md mx-auto rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30">
+            <svg className="h-8 w-8 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Xác nhận đổi thiết bị</h1>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            Tài khoản của bạn đang được đăng nhập trên thiết bị:
+          </p>
+          <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-200">
+            "{existingDeviceName}"
+          </p>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            Bạn có muốn đăng nhập trên thiết bị này không?
+          </p>
+
+          <div className="mt-4 rounded-xl bg-amber-50 dark:bg-amber-900/30 px-4 py-4 border border-amber-200 dark:border-amber-700">
+            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+              ⚠ Lưu ý: bạn chỉ được đổi thiết bị <strong>1 lần mỗi tuần</strong>.
+            </p>
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={() => navigate('/login')}
+              className="flex-1 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition"
+            >
+              Huỷ
+            </button>
+            <button
+              onClick={() => {
+                setStep('otp');
+                handleRequestOtp();
+              }}
+              disabled={sending}
+              className="flex-1 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white hover:bg-amber-700 transition disabled:opacity-50"
+            >
+              {sending ? 'Đang xử lý...' : 'Đồng ý đổi thiết bị'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Step: OTP
   if (step === 'otp') {
     return (
@@ -205,9 +248,11 @@ export default function DeviceChangeOtpPage() {
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Nhập mã OTP gồm 6 số được gửi đến <strong className="text-slate-900 dark:text-slate-200">{emailInput}</strong> để xác nhận đổi thiết bị.
           </p>
-          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-            Lưu ý: bạn chỉ được đổi thiết bị <strong>1 lần mỗi tuần</strong>.
-          </p>
+          <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 px-4 py-3 border border-amber-200 dark:border-amber-700">
+            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+              ⚠ Lưu ý: bạn chỉ được đổi thiết bị <strong>1 lần mỗi tuần</strong>.
+            </p>
+          </div>
 
           <div className="mt-8">
             <div className="flex justify-center gap-3">
