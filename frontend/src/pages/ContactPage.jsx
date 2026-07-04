@@ -26,10 +26,10 @@ export default function ContactPage() {
         </div>
 
         <Link
-          to="/topup"
+          to="/dashboard"
           className="mt-6 inline-block w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition text-center"
         >
-          Quay lại nạp điểm
+          Quay lại trang chủ
         </Link>
       </div>
     </div>
