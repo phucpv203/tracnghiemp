@@ -123,6 +123,9 @@ export default function RegisterPage() {
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             Nhập mã OTP gồm 6 số được gửi đến <strong className="text-slate-900 dark:text-slate-200">{email}</strong>
           </p>
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.
+          </p>
 
           <div className="mt-8">
             <div className="flex justify-center gap-3">

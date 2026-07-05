@@ -229,6 +229,9 @@ export default function ForgotPasswordPage() {
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             Nhập mã OTP gồm 6 số được gửi đến <strong className="text-slate-900 dark:text-slate-200">{email}</strong>
           </p>
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.
+          </p>
 
           <div className="mt-8">
             <div className="flex justify-center gap-3">
@@ -298,6 +301,9 @@ export default function ForgotPasswordPage() {
         <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Quên mật khẩu</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           Nhập email của bạn, chúng tôi sẽ gửi mã OTP để đặt lại mật khẩu.
+        </p>
+        <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+          💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.
         </p>
 
         <form className="mt-8 space-y-6" onSubmit={handleSendOtp}>

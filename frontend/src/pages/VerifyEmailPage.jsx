@@ -115,6 +115,9 @@ export default function VerifyEmailPage() {
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           Nhập mã OTP gồm 6 số được gửi đến email của bạn.
         </p>
+        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+          💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.
+        </p>
 
         <div className="mt-6">
           <div className="space-y-4">
