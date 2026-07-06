@@ -84,40 +84,57 @@ export default function LoginPage() {
   // Khởi tạo nút Google Sign-In
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || googleInitialized.current) return;
-    if (typeof window.google?.accounts?.id !== 'object') return;
 
-    googleInitialized.current = true;
+    // Chờ script Google Identity Services load xong
+    const checkGoogle = () => {
+      if (typeof window.google?.accounts?.id === 'object') {
+        googleInitialized.current = true;
 
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async (response) => {
-        if (!response?.credential) {
-          setError('Đăng nhập Google thất bại.');
-          return;
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            if (!response?.credential) {
+              setError('Đăng nhập Google thất bại.');
+              return;
+            }
+            setGoogleLoading(true);
+            setError('');
+            try {
+              const deviceId = await deviceService.getDeviceId();
+              const deviceName = deviceService.getDeviceName();
+              const result = await apiService.googleLogin({
+                idToken: response.credential,
+                deviceId,
+                deviceName
+              });
+              onLogin(result.user, result.token);
+            } catch (err) {
+              setError(err.message);
+            } finally {
+              setGoogleLoading(false);
+            }
+          },
+        });
+
+        if (googleBtnRef.current) {
+          window.google.accounts.id.renderButton(
+            googleBtnRef.current,
+            { theme: 'outline', size: 'large', width: '100%', text: 'signin_with' }
+          );
         }
-        setGoogleLoading(true);
-        setError('');
-        try {
-          const deviceId = await deviceService.getDeviceId();
-          const deviceName = deviceService.getDeviceName();
-          const result = await apiService.googleLogin({
-            idToken: response.credential,
-            deviceId,
-            deviceName
-          });
-          onLogin(result.user, result.token);
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setGoogleLoading(false);
-        }
-      },
-    });
+        return true;
+      }
+      return false;
+    };
 
-    window.google.accounts.id.renderButton(
-      googleBtnRef.current,
-      { theme: 'outline', size: 'large', width: '100%', text: 'signin_with' }
-    );
+    // Thử ngay lập tức, nếu chưa có thì thử lại sau mỗi 200ms
+    if (!checkGoogle()) {
+      const interval = setInterval(() => {
+        if (checkGoogle()) clearInterval(interval);
+      }, 200);
+      // Dừng kiểm tra sau 10 giây
+      setTimeout(() => clearInterval(interval), 10000);
+    }
   }, [onLogin]);
 
   return (
