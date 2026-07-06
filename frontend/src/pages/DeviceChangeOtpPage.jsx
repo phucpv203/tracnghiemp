@@ -248,7 +248,7 @@ export default function DeviceChangeOtpPage() {
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Nhập mã OTP gồm 6 số được gửi đến <strong className="text-slate-900 dark:text-slate-200">{emailInput}</strong> để xác nhận đổi thiết bị.
           </p>
-          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+          <p className="mt-2 text-sm font-medium text-amber-600 dark:text-amber-400">
             💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.
           </p>
           <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 px-4 py-3 border border-amber-200 dark:border-amber-700">
@@ -326,7 +326,7 @@ export default function DeviceChangeOtpPage() {
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           Nhập email và mật khẩu để nhận mã OTP xác nhận đổi thiết bị.
         </p>
-        <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+        <p className="mt-1 text-sm font-medium text-amber-600 dark:text-amber-400">
           💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.
         </p>
 
