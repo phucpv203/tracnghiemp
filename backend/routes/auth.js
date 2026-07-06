@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { registerUser, loginUser, loginAndReplaceDevice, getUserById } from '../services/authService.js';
+import { registerUser, loginUser, loginAndReplaceDevice, loginWithGoogle, getUserById } from '../services/authService.js';
 import { deleteDeviceByUserId, replaceDevice } from '../services/deviceService.js';
 import { requireAuth } from '../middleware/auth.js';
 import { query } from '../services/db.js';
@@ -458,6 +458,26 @@ router.post('/replace-device', async (req, res) => {
   try {
     const { email, password, deviceId, deviceName } = req.body;
     const result = await loginAndReplaceDevice({ email, password, deviceId, deviceName });
+    res.json(result);
+  } catch (error) {
+    res.status(401).json({ message: error.message });
+  }
+});
+
+/**
+ * POST /auth/google
+ * Đăng nhập / đăng ký bằng Google
+ * Body: { idToken, deviceId?, deviceName? }
+ */
+router.post('/google', async (req, res) => {
+  try {
+    const { idToken, deviceId, deviceName } = req.body;
+    
+    if (!idToken) {
+      return res.status(400).json({ message: 'Thiếu idToken từ Google.' });
+    }
+    
+    const result = await loginWithGoogle({ idToken, deviceId, deviceName });
     res.json(result);
   } catch (error) {
     res.status(401).json({ message: error.message });

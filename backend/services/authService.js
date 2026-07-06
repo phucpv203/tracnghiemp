@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import { query } from './db.js';
 import { getDeviceByUserId, getDeviceByUserIdAndType, createOrUpdateDevice, replaceDevice, detectDeviceType } from './deviceService.js';
 
@@ -43,7 +44,22 @@ async function signToken(user) {
   );
 }
 
+function validateEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw new Error('Email không đúng định dạng.');
+  }
+  const domainParts = email.split('@')[1]?.split('.') || [];
+  const tld = domainParts[domainParts.length - 1];
+  if (!tld || tld.length < 2) {
+    throw new Error('Email phải có đuôi tên miền hợp lệ (vd: .com, .vn, .net).');
+  }
+}
+
 export async function registerUser({ name, email, password }) {
+  // Kiểm tra định dạng email
+  validateEmail(email);
+
   const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
   if (existing.rows.length) {
     throw new Error('Email đã tồn tại.');
@@ -173,4 +189,83 @@ export async function getUserById(id) {
     [id]
   );
   return result.rows[0] || null;
+}
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+let googleClient = null;
+function getGoogleClient() {
+  if (!GOOGLE_CLIENT_ID) return null;
+  if (!googleClient) {
+    googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+  }
+  return googleClient;
+}
+
+/**
+ * Đăng nhập / đăng ký bằng Google
+ * - Verify idToken từ Google
+ * - Nếu email chưa tồn tại → tạo user mới (không cần password_hash)
+ * - Nếu tồn tại → đăng nhập
+ * - user tự động verified (vì Google đã xác thực)
+ */
+export async function loginWithGoogle({ idToken, deviceId, deviceName }) {
+  const client = getGoogleClient();
+  if (!client) {
+    throw new Error('Google login chưa được cấu hình.');
+  }
+
+  // Verify token
+  const ticket = await client.verifyIdToken({
+    idToken,
+    audience: GOOGLE_CLIENT_ID,
+  });
+  const payload = ticket.getPayload();
+  const googleEmail = payload.email;
+  const googleName = payload.name || payload.email.split('@')[0];
+
+  if (!googleEmail) {
+    throw new Error('Không thể lấy email từ tài khoản Google.');
+  }
+
+  // Kiểm tra user đã tồn tại chưa
+  let result = await query('SELECT id, name, email, role, points FROM users WHERE email = $1', [googleEmail]);
+  let user = result.rows[0];
+
+  if (!user) {
+    // Tạo user mới (email_verified = true vì Google đã xác thực)
+    result = await query(
+      `INSERT INTO users(name, email, password_hash, role, points, email_verified)
+       VALUES ($1, $2, '', $3, $4, true)
+       RETURNING id, name, email, role, points`,
+      [googleName, googleEmail, 'user', 0]
+    );
+    user = result.rows[0];
+  }
+
+  // Ghi nhận thời gian đăng nhập
+  await query('UPDATE users SET last_login = NOW(), updated_at = NOW() WHERE id = $1', [user.id]);
+
+  // Xử lý device (nếu có)
+  if (user.role !== 'admin') {
+    const hasDevices = await checkDevicesTable();
+    if (hasDevices && deviceId) {
+      try {
+        await createOrUpdateDevice(user.id, deviceId, deviceName || 'Unknown device');
+      } catch (_) {
+        // Bỏ qua lỗi device
+      }
+    }
+  }
+
+  const token = await signToken(user);
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      points: Number(user.points),
+    },
+    token,
+  };
 }

@@ -26,10 +26,33 @@ export default function RegisterPage() {
     };
   }, []);
 
+  // Hàm kiểm tra đuôi email hợp lệ
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return 'Email không đúng định dạng.';
+    }
+    // Kiểm tra đuôi tên miền phải có ít nhất 2 ký tự sau dấu chấm cuối (vd: .com, .vn, .net)
+    const domainParts = email.split('@')[1]?.split('.') || [];
+    const tld = domainParts[domainParts.length - 1];
+    if (!tld || tld.length < 2) {
+      return 'Email phải có đuôi tên miền hợp lệ (vd: .com, .vn, .net).';
+    }
+    return null;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setError('');
+
+    // Kiểm tra email trên client trước
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+
     try {
-      setError('');
       const result = await apiService.register({ name, email, password });
       setStep('otp');
       startCountdown();

@@ -1,20 +1,25 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { deviceService } from '../services/deviceService';
 import { AuthContext } from '../App';
 import NoteBanner from '../components/NoteBanner';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [emailNotVerified, setEmailNotVerified] = useState(null);
   const [deviceConflict, setDeviceConflict] = useState(null); // { existingDeviceName, email, password }
   const [replacing, setReplacing] = useState(false);
   const { onLogin } = useContext(AuthContext);
   const navigate = useNavigate();
+  const googleBtnRef = useRef(null);
+  const googleInitialized = useRef(false);
 
   // --- Hàm parse tên thiết bị từ message ---
   function extractDeviceName(message) {
@@ -75,6 +80,45 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Khởi tạo nút Google Sign-In
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || googleInitialized.current) return;
+    if (typeof window.google?.accounts?.id !== 'object') return;
+
+    googleInitialized.current = true;
+
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        if (!response?.credential) {
+          setError('Đăng nhập Google thất bại.');
+          return;
+        }
+        setGoogleLoading(true);
+        setError('');
+        try {
+          const deviceId = await deviceService.getDeviceId();
+          const deviceName = deviceService.getDeviceName();
+          const result = await apiService.googleLogin({
+            idToken: response.credential,
+            deviceId,
+            deviceName
+          });
+          onLogin(result.user, result.token);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setGoogleLoading(false);
+        }
+      },
+    });
+
+    window.google.accounts.id.renderButton(
+      googleBtnRef.current,
+      { theme: 'outline', size: 'large', width: '100%', text: 'signin_with' }
+    );
+  }, [onLogin]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12 sm:px-6">
@@ -141,6 +185,24 @@ export default function LoginPage() {
             {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
+
+        {GOOGLE_CLIENT_ID && (
+          <>
+            <div className="mt-6 flex items-center gap-3">
+              <div className="flex-1 border-t border-slate-200 dark:border-slate-600"></div>
+              <span className="text-xs text-slate-400 dark:text-slate-500">HOẶC</span>
+              <div className="flex-1 border-t border-slate-200 dark:border-slate-600"></div>
+            </div>
+
+            <div className="mt-6 flex justify-center">
+              {googleLoading ? (
+                <div className="text-sm text-slate-500 dark:text-slate-400">Đang đăng nhập với Google...</div>
+              ) : (
+                <div ref={googleBtnRef}></div>
+              )}
+            </div>
+          </>
+        )}
 
         <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
           Chưa có tài khoản?{' '}

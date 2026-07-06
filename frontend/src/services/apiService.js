@@ -98,6 +98,7 @@ export const apiService = {
   forgotPassword: (payload) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify(payload) }),
   resetPassword: (payload) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify(payload) }),
   requestDeviceOtp: (payload) => request('/auth/request-device-otp', { method: 'POST', body: JSON.stringify(payload) }),
+  googleLogin: (payload) => request('/auth/google', { method: 'POST', body: JSON.stringify(payload) }),
   getCourseStudy: (courseId) => request(`/courses/${courseId}/study`),
 
 
