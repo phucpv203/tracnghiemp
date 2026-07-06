@@ -42,6 +42,11 @@ export async function getDeviceByUserIdAndType(userId, deviceType) {
 
 export async function createOrUpdateDevice(userId, deviceId, deviceName) {
   const deviceType = detectDeviceType(deviceName);
+
+  // Nếu device_id đã tồn tại cho một user khác → xoá bản ghi cũ
+  // (do ràng buộc UNIQUE trên cột device_id)
+  await query('DELETE FROM user_devices WHERE device_id = $1 AND user_id != $2', [deviceId, userId]);
+
   const result = await query(
     `INSERT INTO user_devices (user_id, device_id, device_name, device_type)
      VALUES ($1, $2, $3, $4)
