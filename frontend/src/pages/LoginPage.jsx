@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [emailNotVerified, setEmailNotVerified] = useState(null);
   const [deviceConflict, setDeviceConflict] = useState(null); // { existingDeviceName, email, password }
   const [replacing, setReplacing] = useState(false);
+  const [verifyWarning, setVerifyWarning] = useState(null); // { email } - hiển thị sau khi đăng nhập thành công
   const { onLogin } = useContext(AuthContext);
   const navigate = useNavigate();
   const googleBtnRef = useRef(null);
@@ -33,21 +34,23 @@ export default function LoginPage() {
     setLoading(true);
     setEmailNotVerified(null);
     setDeviceConflict(null);
+    setVerifyWarning(null);
 
     const deviceId = await deviceService.getDeviceId();
     const deviceName = deviceService.getDeviceName();
 
     try {
       const response = await apiService.login({ email, password, deviceId, deviceName });
+      // Nếu email chưa verified → vẫn cho đăng nhập nhưng hiển thị cảnh báo
+      if (!response.user.emailVerified) {
+        setVerifyWarning({ email });
+      }
       onLogin(response.user, response.token);
     } catch (err) {
       // Nếu conflict thiết bị → hiện hộp thoại hỏi
       if (err.message && err.message.includes('Tài khoản đang được dùng trên')) {
         const existingDeviceName = extractDeviceName(err.message);
         setDeviceConflict({ existingDeviceName, email, password });
-      } else if (err.message && err.message.includes('Email chưa được xác thực')) {
-        setEmailNotVerified({ email });
-        setError('Email chưa được xác thực. Vui lòng kiểm tra email hoặc gửi lại mã OTP.');
       } else {
         setError(err.message);
       }

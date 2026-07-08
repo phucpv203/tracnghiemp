@@ -89,7 +89,7 @@ export async function registerUser({ name, email, password }) {
  */
 export async function loginUser({ email, password, deviceId, deviceName }) {
   const result = await query(
-    'SELECT id, name, email, password_hash, role, points, last_login FROM users WHERE email = $1',
+    'SELECT id, name, email, password_hash, role, points, last_login, email_verified FROM users WHERE email = $1',
     [email]
   );
   const user = result.rows[0];
@@ -144,6 +144,7 @@ export async function loginUser({ email, password, deviceId, deviceName }) {
       role: user.role,
       points: Number(user.points),
       lastLogin: previousLastLogin, // Trả về lần đăng nhập trước đó, không phải lần hiện tại
+      emailVerified: user.email_verified,
     },
     token,
   };
@@ -185,7 +186,7 @@ export async function loginAndReplaceDevice({ email, password, deviceId, deviceN
 
 export async function getUserById(id) {
   const result = await query(
-    'SELECT id, name, email, role, points, last_login FROM users WHERE id = $1',
+    'SELECT id, name, email, role, points, last_login, email_verified FROM users WHERE id = $1',
     [id]
   );
   return result.rows[0] || null;

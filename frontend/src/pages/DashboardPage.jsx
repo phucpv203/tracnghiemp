@@ -28,8 +28,10 @@ export default function DashboardPage() {
   const [editingNote, setEditingNote] = useState(false); // Đang sửa lưu ý
   const [noteDraft, setNoteDraft] = useState('');      // Bản nháp khi sửa
   const [savingNote, setSavingNote] = useState(false); // Đang lưu lưu ý
+  const [showVerifyBanner, setShowVerifyBanner] = useState(true); // Hiển thị banner xác thực email
 
   const isAuthenticated = !!user;
+  const emailUnverified = isAuthenticated && !user?.emailVerified;
 
   // Hiển thị toast
   const showToast = useCallback((message, type) => {
@@ -227,6 +229,57 @@ export default function DashboardPage() {
   
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      {/* Banner cảnh báo xác thực email */}
+      {emailUnverified && showVerifyBanner && (
+        <div className="mb-6 rounded-3xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 mt-1">
+              <svg className="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                Email chưa được xác thực
+              </h3>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                Vui lòng xác thực email để đảm bảo tài khoản của bạn được bảo mật và sử dụng đầy đủ tính năng.
+              </p>
+              <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                Nếu đã thử mà không nhận được mã OTP,{' '}
+                <Link to="/lien-he" className="font-semibold underline hover:text-amber-800 dark:hover:text-amber-200">
+                  liên hệ hỗ trợ
+                </Link>
+                .
+              </p>
+              <div className="mt-3 flex gap-3">
+                <button
+                  onClick={() => navigate('/verify-email', { state: { email: user?.email } })}
+                  className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition"
+                >
+                  Xác thực ngay
+                </button>
+                <button
+                  onClick={() => setShowVerifyBanner(false)}
+                  className="rounded-xl border border-amber-300 dark:border-amber-600 px-4 py-2 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition"
+                >
+                  Để sau
+                </button>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowVerifyBanner(false)}
+              className="flex-shrink-0 p-1 text-amber-500 hover:text-amber-700 dark:hover:text-amber-300 transition"
+              aria-label="Đóng"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8 flex flex-col gap-4 rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 sm:flex-row sm:items-center sm:justify-between">
         <div>
           

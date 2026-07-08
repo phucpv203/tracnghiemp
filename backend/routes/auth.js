@@ -420,21 +420,11 @@ router.post('/verify-device-otp', async (req, res) => {
 
 /**
  * POST /auth/login
- * Đăng nhập - kiểm tra email verified và thiết bị
+ * Đăng nhập - kiểm tra thiết bị, không chặn email chưa verified
  */
 router.post('/login', async (req, res) => {
   try {
     const { email, password, deviceId, deviceName } = req.body;
-    
-    // Kiểm tra email đã verified chưa
-    const checkRes = await query('SELECT email_verified FROM users WHERE email = $1', [email]);
-    if (checkRes.rows.length && !checkRes.rows[0].email_verified) {
-      return res.status(403).json({
-        message: 'Email chưa được xác thực. Vui lòng kiểm tra email để xác thực tài khoản.',
-        code: 'EMAIL_NOT_VERIFIED',
-        email
-      });
-    }
     
     const result = await loginUser({ email, password, deviceId, deviceName });
     res.json(result);
@@ -511,6 +501,7 @@ router.get('/me', requireAuth, async (req, res) => {
         role: user.role,
         points: Number(user.points),
         lastLogin: user.last_login,
+        emailVerified: user.email_verified,
       },
     });
   } catch (error) {
