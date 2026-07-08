@@ -5,7 +5,9 @@ import { AuthContext } from '../App';
 
 export default function VerifyEmailPage() {
   const location = useLocation();
-  const initialEmail = location.state?.email || '';
+  const { user } = useContext(AuthContext);
+  const emailFromUser = user?.email || '';
+  const initialEmail = location.state?.email || emailFromUser || '';
   
   const [email, setEmail] = useState(initialEmail);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -17,6 +19,14 @@ export default function VerifyEmailPage() {
   const navigate = useNavigate();
   const { onLogin } = useContext(AuthContext);
   const countdownRef = useRef(null);
+
+  // Tự động gửi OTP khi vào trang nếu có email và chưa có OTP
+  useEffect(() => {
+    if (email && !otp.some(d => d !== '')) {
+      handleResendOtp();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email]);
 
   // Cleanup interval khi unmount
   useEffect(() => {
