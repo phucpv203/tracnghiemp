@@ -165,7 +165,7 @@ function App() {
           <Routes>
           <Route path="/login" element={user ? <Navigate to="/trang-chu" replace /> : <LoginPage />} />
           <Route path="/register" element={user ? <Navigate to="/trang-chu" replace /> : <RegisterPage />} />
-          <Route path="/verify-email" element={user ? <Navigate to="/trang-chu" replace /> : <VerifyEmailPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/forgot-password" element={user ? <Navigate to="/trang-chu" replace /> : <ForgotPasswordPage />} />
           <Route path="/device-change-otp" element={user ? <Navigate to="/trang-chu" replace /> : <DeviceChangeOtpPage />} />
           <Route path="/lien-he" element={<ContactPage />} />
