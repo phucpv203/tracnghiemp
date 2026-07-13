@@ -26,9 +26,11 @@ export default function StudyPage() {
   const [answeredQuestions, setAnsweredQuestions] = useState({}); // Các câu đã trả lời
   const [shuffledAnswersMap, setShuffledAnswersMap] = useState({}); // {questionId: [answers]} - đáp án đã xáo trộn
   const [initialIndexLoaded, setInitialIndexLoaded] = useState(false); // Đã khôi phục index từ localStorage chưa
+  const [wrongAnswerMode, setWrongAnswerMode] = useState(false); // Chế độ luyện câu sai
+  const [wrongQuestions, setWrongQuestions] = useState([]); // Danh sách câu hỏi sai khi lọc
 
   // Compute current question (must be before useEffects that use it)
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = wrongAnswerMode ? wrongQuestions[currentQuestionIndex] : questions[currentQuestionIndex];
 
   // ========== ALL useEffect HOOKS MUST BE BEFORE ANY EARLY RETURN ==========
   
@@ -98,12 +100,13 @@ export default function StudyPage() {
   // Update DOM elements for question list (horizontal scrollable display)
   useEffect(() => {
     const questionListInner = document.getElementById('question-list-inner');
-    if (!questionListInner || !questions.length) return;
+    const listQuestions = wrongAnswerMode ? wrongQuestions : questions;
+    if (!questionListInner || !listQuestions.length) return;
 
     questionListInner.innerHTML = '';
     const ul = document.createElement('ul');
     ul.className = 'flex gap-2';
-    questions.forEach((q, index) => {
+    listQuestions.forEach((q, index) => {
       const item = document.createElement('li');
       const answeredData = answeredQuestions[q.id];
       let itemBgClass, badgeClass;
@@ -131,7 +134,8 @@ export default function StudyPage() {
         item.dataset.current = 'true';
       }
       item.appendChild(numberBadge);
-      item.onclick = () => handleGoToQuestion(index);
+      const questionId = q.id;
+      item.onclick = () => handleGoToQuestion(index, questionId);
       ul.appendChild(item);
     });
     questionListInner.appendChild(ul);
@@ -143,7 +147,7 @@ export default function StudyPage() {
       const scrollAmount = currentItem.offsetLeft - container.offsetLeft - container.clientWidth / 2 + currentItem.clientWidth / 2;
       container.scrollTo({ left: scrollAmount, behavior: 'smooth' });
     }
-  }, [questions, currentQuestionIndex, answeredQuestions]);
+  }, [questions, wrongQuestions, currentQuestionIndex, answeredQuestions, wrongAnswerMode]);
 
   // Update question display
   useEffect(() => {
@@ -280,6 +284,7 @@ export default function StudyPage() {
   useEffect(() => {
     const prevBtn = document.getElementById('prev');
     const nextBtn = document.getElementById('next');
+    const listLength = wrongAnswerMode ? wrongQuestions.length : questions.length;
 
     if (prevBtn) {
       prevBtn.onclick = handlePrev;
@@ -293,14 +298,14 @@ export default function StudyPage() {
 
     if (nextBtn) {
       nextBtn.onclick = handleNext;
-      nextBtn.disabled = currentQuestionIndex === questions.length - 1;
+      nextBtn.disabled = currentQuestionIndex === listLength - 1;
       nextBtn.className = `inline-flex items-center justify-center rounded-3xl px-4 py-3 text-sm font-semibold shadow-lg shadow-sky-500/10 transition focus:outline-none focus:ring-2 focus:ring-sky-500 ${
-        currentQuestionIndex === questions.length - 1
+        currentQuestionIndex === listLength - 1
           ? 'bg-slate-300 dark:bg-slate-600 text-slate-500 dark:text-slate-400 cursor-not-allowed'
           : 'bg-sky-600 text-white hover:bg-sky-700'
       }`;
     }
-  }, [currentQuestionIndex, questions.length]);
+  }, [currentQuestionIndex, questions.length, wrongQuestions.length, wrongAnswerMode]);
 
   // ========== NOW IT'S SAFE TO DO EARLY RETURN ==========
   if (!course) return <div className="flex justify-center items-center min-h-screen text-slate-600 dark:text-slate-400">Đang tải...</div>;
@@ -365,11 +370,12 @@ export default function StudyPage() {
   };
 
   const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
+    const listQuestions = wrongAnswerMode ? wrongQuestions : questions;
+    if (currentQuestionIndex < listQuestions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
       localStorage.setItem(`study_index_${courseId}`, nextIndex);
-      const nextQuestion = questions[nextIndex];
+      const nextQuestion = listQuestions[nextIndex];
       const answeredData = answeredQuestions[nextQuestion?.id];
       if (answeredData) {
         setSelectedAnswer(answeredData.selected);
@@ -386,7 +392,8 @@ export default function StudyPage() {
       const prevIndex = currentQuestionIndex - 1;
       setCurrentQuestionIndex(prevIndex);
       localStorage.setItem(`study_index_${courseId}`, prevIndex);
-      const prevQuestion = questions[prevIndex];
+      const listQuestions = wrongAnswerMode ? wrongQuestions : questions;
+      const prevQuestion = listQuestions[prevIndex];
       const answeredData = answeredQuestions[prevQuestion?.id];
       if (answeredData) {
         setSelectedAnswer(answeredData.selected);
@@ -403,16 +410,54 @@ export default function StudyPage() {
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setShowExplanation(false);
+    setWrongAnswerMode(false);
+    setWrongQuestions([]);
     localStorage.removeItem(`study_answers_${courseId}`);
     localStorage.removeItem(`study_index_${courseId}`);
   };
 
-  const handleGoToQuestion = (index) => {
+  const handleWrongAnswerPractice = () => {
+    // Lọc ra các câu trả lời sai
+    const wrongIds = Object.entries(answeredQuestions)
+      .filter(([_, data]) => !data.isCorrect)
+      .map(([id]) => Number(id));
+    
+    if (wrongIds.length === 0) {
+      alert('Không có câu trả lời sai nào để luyện tập!');
+      return;
+    }
+
+    const wrongQs = questions.filter(q => wrongIds.includes(Number(q.id)));
+    setWrongQuestions(wrongQs);
+    setWrongAnswerMode(true);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+  };
+
+  const handleBackToNormalStudy = () => {
+    setWrongAnswerMode(false);
+    setWrongQuestions([]);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+    // Khôi phục index đã lưu
+    const savedIndex = localStorage.getItem(`study_index_${courseId}`);
+    if (savedIndex !== null) {
+      const idx = parseInt(savedIndex, 10);
+      if (!isNaN(idx)) {
+        setCurrentQuestionIndex(idx);
+      }
+    }
+  };
+
+  const handleGoToQuestion = (index, questionId) => {
     setCurrentQuestionIndex(index);
     localStorage.setItem(`study_index_${courseId}`, index);
     
     // Check if this question was already answered
-    const question = questions[index];
+    const listQuestions = wrongAnswerMode ? wrongQuestions : questions;
+    const question = listQuestions[index];
     const answeredData = answeredQuestions[question?.id];
     
     if (answeredData) {
@@ -441,7 +486,23 @@ export default function StudyPage() {
       </div>
 
       <div className="space-y-6">
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          {wrongAnswerMode && (
+            <button
+              onClick={handleBackToNormalStudy}
+              className="rounded-3xl border border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 px-5 py-3 text-sm font-semibold text-orange-700 dark:text-orange-300 shadow-sm transition hover:bg-orange-100 dark:hover:bg-orange-900/30 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              ← Về ôn tập
+            </button>
+          )}
+          {!wrongAnswerMode && (
+            <button 
+              onClick={handleWrongAnswerPractice}
+              className="rounded-3xl border border-rose-300 dark:border-rose-700 bg-rose-50 dark:bg-rose-900/20 px-5 py-3 text-sm font-semibold text-rose-700 dark:text-rose-300 shadow-sm transition hover:bg-rose-100 dark:hover:bg-rose-900/30 focus:outline-none focus:ring-2 focus:ring-rose-500"
+            >
+              Luyện câu sai
+            </button>
+          )}
           <button 
             onClick={handleResetProgress}
             className="rounded-3xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 shadow-sm transition hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -469,7 +530,7 @@ export default function StudyPage() {
                 <span>Chưa trả lời</span>
               </div>
             </div>
-            <span className="font-semibold text-slate-600 dark:text-slate-400">Câu <span className="font-bold text-slate-900 dark:text-slate-100">{currentQuestionIndex + 1}</span>/{questions.length}</span>
+            <span className="font-semibold text-slate-600 dark:text-slate-400">Câu <span className="font-bold text-slate-900 dark:text-slate-100">{currentQuestionIndex + 1}</span>/{wrongAnswerMode ? wrongQuestions.length : questions.length}</span>
           </div>
         </div>
 
