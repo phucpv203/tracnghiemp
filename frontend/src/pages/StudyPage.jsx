@@ -87,6 +87,13 @@ export default function StudyPage() {
   useEffect(() => {
     if (!initialIndexLoaded || !questions.length || !currentQuestion) return;
     
+    // Ở chế độ luyện câu sai, không khôi phục đáp án cũ - cho phép làm lại từ đầu
+    if (wrongAnswerMode) {
+      setSelectedAnswer(null);
+      setShowExplanation(false);
+      return;
+    }
+
     const answeredData = answeredQuestions[currentQuestion.id];
     if (answeredData) {
       setSelectedAnswer(answeredData.selected);
@@ -95,7 +102,7 @@ export default function StudyPage() {
       setSelectedAnswer(null);
       setShowExplanation(false);
     }
-  }, [initialIndexLoaded, questions, currentQuestion?.id]);
+  }, [initialIndexLoaded, questions, currentQuestion?.id, wrongAnswerMode]);
 
   // Update DOM elements for question list (horizontal scrollable display)
   useEffect(() => {
@@ -376,13 +383,19 @@ export default function StudyPage() {
       setCurrentQuestionIndex(nextIndex);
       localStorage.setItem(`study_index_${courseId}`, nextIndex);
       const nextQuestion = listQuestions[nextIndex];
-      const answeredData = answeredQuestions[nextQuestion?.id];
-      if (answeredData) {
-        setSelectedAnswer(answeredData.selected);
-        setShowExplanation(true);
-      } else {
+      // Ở chế độ luyện câu sai, không khôi phục đáp án cũ
+      if (wrongAnswerMode) {
         setSelectedAnswer(null);
         setShowExplanation(false);
+      } else {
+        const answeredData = answeredQuestions[nextQuestion?.id];
+        if (answeredData) {
+          setSelectedAnswer(answeredData.selected);
+          setShowExplanation(true);
+        } else {
+          setSelectedAnswer(null);
+          setShowExplanation(false);
+        }
       }
     }
   };
@@ -394,13 +407,19 @@ export default function StudyPage() {
       localStorage.setItem(`study_index_${courseId}`, prevIndex);
       const listQuestions = wrongAnswerMode ? wrongQuestions : questions;
       const prevQuestion = listQuestions[prevIndex];
-      const answeredData = answeredQuestions[prevQuestion?.id];
-      if (answeredData) {
-        setSelectedAnswer(answeredData.selected);
-        setShowExplanation(true);
-      } else {
+      // Ở chế độ luyện câu sai, không khôi phục đáp án cũ
+      if (wrongAnswerMode) {
         setSelectedAnswer(null);
         setShowExplanation(false);
+      } else {
+        const answeredData = answeredQuestions[prevQuestion?.id];
+        if (answeredData) {
+          setSelectedAnswer(answeredData.selected);
+          setShowExplanation(true);
+        } else {
+          setSelectedAnswer(null);
+          setShowExplanation(false);
+        }
       }
     }
   };
@@ -455,6 +474,13 @@ export default function StudyPage() {
     setCurrentQuestionIndex(index);
     localStorage.setItem(`study_index_${courseId}`, index);
     
+    // Ở chế độ luyện câu sai, không khôi phục đáp án cũ
+    if (wrongAnswerMode) {
+      setSelectedAnswer(null);
+      setShowExplanation(false);
+      return;
+    }
+
     // Check if this question was already answered
     const listQuestions = wrongAnswerMode ? wrongQuestions : questions;
     const question = listQuestions[index];
