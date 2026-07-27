@@ -402,7 +402,7 @@ export default function DashboardPage() {
       ) : (
         <div className="grid gap-5 md:grid-cols-3 xl:grid-cols-4">
           {filteredCourses.map((course) => (
-            <Card key={course.id} padding="md" hover>
+            <Card key={course.id} padding="md" hover className="flex flex-col">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1 min-w-0">
                   <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{course.title}</h2>
@@ -425,7 +425,7 @@ export default function DashboardPage() {
                 )}
               </div>
               
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 mt-auto">
                 {course.unlocked && isAuthenticated ? (
                   <div className="flex gap-3">
                     {course.questionType === 'fill' ? (
