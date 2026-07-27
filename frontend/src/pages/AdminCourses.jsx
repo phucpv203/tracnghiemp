@@ -2,6 +2,12 @@ import { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
+import { Button, Card, Input, Toast } from '../components/ui';
+import { 
+  ArrowLeft, SignOut, Plus, Trash, FloppyDisk, 
+  PencilSimple, FileArrowDown, MagnifyingGlass, 
+  Lock, BookOpen, CheckCircle, WarningCircle 
+} from '@phosphor-icons/react';
 
 export default function AdminCourses() {
   const { onLogout } = useContext(AuthContext);
@@ -33,6 +39,8 @@ export default function AdminCourses() {
     const res = await apiService.createCourse(newCourse);
     setCourses((s) => [...s, res.course]);
     setNewCourse({ title: '', description: '', requiredScore: 20, questionType: 'choice' });
+    setToast({ message: 'Đã tạo môn học mới!', type: 'success' });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const update = async (id) => {
@@ -42,6 +50,8 @@ export default function AdminCourses() {
     const questionType = document.getElementById(`qtype-${id}`).value;
     const res = await apiService.updateCourse(id, { title, description, requiredScore, questionType });
     setCourses((s) => s.map((c) => (c.id === id ? res.course : c)));
+    setToast({ message: 'Đã cập nhật môn học!', type: 'success' });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const importQuestions = async () => {
@@ -83,157 +93,211 @@ export default function AdminCourses() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Quản lý môn học & câu hỏi</h1>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/trang-chu"
-            className="rounded-2xl bg-slate-100 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-          >
-            ← Quay lại Trang chủ
-          </Link>
-          <button
-            onClick={onLogout}
-            className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600"
-          >
-            Đăng xuất
-          </button>
+      <Card padding="md" className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Quản lý môn học & câu hỏi</h1>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Thêm, sửa, xoá môn học và câu hỏi.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/trang-chu">
+              <Button variant="secondary" size="sm">
+                <ArrowLeft size={16} weight="bold" />
+                Quay lại
+              </Button>
+            </Link>
+            <Button variant="primary" size="sm" onClick={onLogout}>
+              <SignOut size={16} weight="bold" />
+              Đăng xuất
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
 
       <div className="mt-6 space-y-4">
-        <div className="rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
-          <h3 className="font-semibold text-slate-900 dark:text-slate-100">Thêm môn học mới</h3>
-          <input className="mt-3 w-full px-3 py-2" placeholder="Tiêu đề" value={newCourse.title} onChange={(e) => setNewCourse((s) => ({ ...s, title: e.target.value }))} />
-          <textarea
-            className="mt-3 w-full px-3 py-2"
-            placeholder="Mô tả môn học"
-            rows="2"
-            value={newCourse.description}
-            onChange={(e) => setNewCourse((s) => ({ ...s, description: e.target.value }))}
-          />
-          <input
-            type="number"
-            className="mt-3 w-full px-3 py-2"
-            placeholder="Điểm mở khóa"
-            value={newCourse.requiredScore}
-            onChange={(e) => setNewCourse((s) => ({ ...s, requiredScore: Number(e.target.value) }))}
-          />
-          <select
-            className="mt-3 w-full px-3 py-2"
-            value={newCourse.questionType}
-            onChange={(e) => setNewCourse((s) => ({ ...s, questionType: e.target.value }))}
-          >
-            <option value="choice">Trắc nghiệm (chọn đáp án)</option>
-            <option value="fill">Điền đáp án (xem hình)</option>
-          </select>
-          <button className="mt-3 rounded-md bg-emerald-600 px-4 py-2 text-white" onClick={create}>Tạo môn học</button>
-        </div>
+        {/* Thêm môn học mới */}
+        <Card padding="md">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Plus size={18} weight="bold" className="text-success-600" />
+            Thêm môn học mới
+          </h3>
+          <div className="mt-4 space-y-3">
+            <input
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800"
+              placeholder="Tiêu đề môn học"
+              value={newCourse.title}
+              onChange={(e) => setNewCourse((s) => ({ ...s, title: e.target.value }))}
+            />
+            <textarea
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800 resize-none"
+              placeholder="Mô tả môn học"
+              rows="2"
+              value={newCourse.description}
+              onChange={(e) => setNewCourse((s) => ({ ...s, description: e.target.value }))}
+            />
+            <div className="flex gap-3">
+              <input
+                type="number"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800"
+                placeholder="Điểm mở khóa"
+                value={newCourse.requiredScore}
+                onChange={(e) => setNewCourse((s) => ({ ...s, requiredScore: Number(e.target.value) }))}
+              />
+              <select
+                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800"
+                value={newCourse.questionType}
+                onChange={(e) => setNewCourse((s) => ({ ...s, questionType: e.target.value }))}
+              >
+                <option value="choice">Trắc nghiệm (chọn đáp án)</option>
+                <option value="fill">Điền đáp án (xem hình)</option>
+              </select>
+            </div>
+            <Button variant="success" onClick={create}>
+              <Plus size={16} weight="bold" />
+              Tạo môn học
+            </Button>
+          </div>
+        </Card>
 
-        <div className="rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
-          <h3 className="font-semibold text-slate-900 dark:text-slate-100">Import câu hỏi từ file JSON</h3>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">File JSON có thể là một object hoặc mảng object với các trường: question, answers, correct, explanation.</p>
-          <select
-            value={uploadCourseId}
-            onChange={(e) => setUploadCourseId(e.target.value)}
-            className="mt-3 w-full px-3 py-2"
-          >
-            <option value="">Chọn môn</option>
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>{course.title}</option>
-            ))}
-          </select>
-          <input
-            id="question-file"
-            type="file"
-            accept="application/json"
-            className="mt-3 w-full px-3 py-2"
-            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-          />
-          <button className="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-white" onClick={importQuestions}>Import câu hỏi</button>
-          {importMessage && <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">{importMessage}</p>}
-        </div>
+        {/* Import câu hỏi */}
+        <Card padding="md">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <FileArrowDown size={18} weight="bold" className="text-primary-600" />
+            Import câu hỏi từ file JSON
+          </h3>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            File JSON có thể là một object hoặc mảng object với các trường: question, answers, correct, explanation.
+          </p>
+          <div className="mt-4 space-y-3">
+            <select
+              value={uploadCourseId}
+              onChange={(e) => setUploadCourseId(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800"
+            >
+              <option value="">Chọn môn</option>
+              {courses.map((course) => (
+                <option key={course.id} value={course.id}>{course.title}</option>
+              ))}
+            </select>
+            <input
+              id="question-file"
+              type="file"
+              accept="application/json"
+              className="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300 hover:file:bg-primary-100 dark:hover:file:bg-primary-900/50"
+              onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+            />
+            <Button variant="primary" onClick={importQuestions}>
+              <FileArrowDown size={16} weight="bold" />
+              Import câu hỏi
+            </Button>
+            {importMessage && (
+              <p className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <CheckCircle size={16} weight="fill" className="text-success-600" />
+                {importMessage}
+              </p>
+            )}
+          </div>
+        </Card>
 
         {/* Search bar */}
-        <div className="mt-2 mb-2">
+        <div className="relative max-w-md">
           <input
             type="text"
             placeholder="Tìm kiếm môn học theo tên..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-slate-400 focus:outline-none"
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 py-3 pl-10 pr-4 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800"
           />
+          <MagnifyingGlass size={18} weight="regular" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         </div>
 
+        {/* Danh sách môn học */}
         {courses.map((c) => (
-          <div key={c.id} className="rounded-xl bg-white dark:bg-slate-800 p-4 shadow-sm dark:shadow-slate-700/30">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <Card key={c.id} padding="md">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="font-semibold text-slate-900 dark:text-slate-100">{c.title}</h3>
-                <span className="rounded-full bg-amber-100 dark:bg-amber-900/40 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
-                  🔒 {c.required_points || 0} điểm
+                <span className="inline-flex items-center gap-1 rounded-full bg-warning-100 dark:bg-warning-900/40 px-3 py-1 text-xs font-semibold text-warning-700 dark:text-warning-400">
+                  <Lock size={12} weight="bold" />
+                  {c.required_points || 0} điểm
                 </span>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
                   c.question_type === 'fill'
                     ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400'
                     : 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400'
                 }`}>
+                  <BookOpen size={12} weight="bold" />
                   {c.question_type === 'fill' ? 'Điền đáp án' : 'Trắc nghiệm'}
                 </span>
               </div>
-              <button
+              <Button
+                size="sm"
+                variant="danger"
                 onClick={() => handleDeleteCourse(c.id, c.title)}
-                disabled={deletingCourseId === c.id}
-                className="rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white hover:bg-red-700 disabled:bg-slate-300 dark:disabled:bg-slate-600"
+                loading={deletingCourseId === c.id}
               >
-                {deletingCourseId === c.id ? 'Đang xoá...' : 'Xoá'}
-              </button>
+                <Trash size={14} weight="bold" />
+                Xoá
+              </Button>
             </div>
-            <input id={`title-${c.id}`} defaultValue={c.title} className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600" />
-            <textarea
-              id={`description-${c.id}`}
-              defaultValue={c.description || ''}
-              className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
-              placeholder="Mô tả môn học"
-              rows="2"
-            />
-            <input
-              id={`required-${c.id}`}
-              type="number"
-              defaultValue={c.required_points || 0}
-              className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
-              placeholder="Điểm mở khóa"
-            />
-            <select
-              id={`qtype-${c.id}`}
-              defaultValue={c.question_type || 'choice'}
-              className="mt-2 w-full px-3 py-2 text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
-            >
-              <option value="choice">Trắc nghiệm (chọn đáp án)</option>
-              <option value="fill">Điền đáp án (xem hình)</option>
-            </select>
-            <div className="mt-3 flex gap-2">
-              <button onClick={() => update(c.id)} className="rounded-md bg-sky-600 px-3 py-1 text-white">Lưu</button>
-              <button
-                onClick={() => navigate(`/admin/courses/${c.id}/questions`)}
-                className="rounded-md bg-amber-600 px-3 py-1 text-white hover:bg-amber-700"
-              >
-                Sửa câu hỏi
-              </button>
+            
+            <div className="space-y-3">
+              <input
+                id={`title-${c.id}`}
+                defaultValue={c.title}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800"
+                placeholder="Tiêu đề"
+              />
+              <textarea
+                id={`description-${c.id}`}
+                defaultValue={c.description || ''}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800 resize-none"
+                placeholder="Mô tả môn học"
+                rows="2"
+              />
+              <div className="flex gap-3">
+                <input
+                  id={`required-${c.id}`}
+                  type="number"
+                  defaultValue={c.required_points || 0}
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800"
+                  placeholder="Điểm mở khóa"
+                />
+                <select
+                  id={`qtype-${c.id}`}
+                  defaultValue={c.question_type || 'choice'}
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800"
+                >
+                  <option value="choice">Trắc nghiệm</option>
+                  <option value="fill">Điền đáp án</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="primary" onClick={() => update(c.id)}>
+                  <FloppyDisk size={14} weight="bold" />
+                  Lưu
+                </Button>
+                <Button
+                  size="sm"
+                  variant="warning"
+                  onClick={() => navigate(`/admin/courses/${c.id}/questions`)}
+                >
+                  <PencilSimple size={14} weight="bold" />
+                  Sửa câu hỏi
+                </Button>
+              </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Toast notification */}
       {toast && (
-        <div className={`fixed top-6 right-6 z-50 rounded-2xl px-6 py-4 shadow-lg text-sm font-semibold transition-all ${
-          toast.type === 'success' 
-            ? 'bg-green-50 border border-green-200 text-green-700' 
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          {toast.message}
-        </div>
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast(null)}
+        />
       )}
     </main>
   );

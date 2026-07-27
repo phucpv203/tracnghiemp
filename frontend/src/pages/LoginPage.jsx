@@ -4,6 +4,8 @@ import { apiService } from '../services/apiService';
 import { deviceService } from '../services/deviceService';
 import { AuthContext } from '../App';
 import NoteBanner from '../components/NoteBanner';
+import { Button, Input, Card } from '../components/ui';
+import { WarningCircle, GoogleLogo } from '@phosphor-icons/react';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -14,40 +16,57 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [emailNotVerified, setEmailNotVerified] = useState(null);
-  const [deviceConflict, setDeviceConflict] = useState(null); // { existingDeviceName, email, password }
+  const [deviceConflict, setDeviceConflict] = useState(null);
   const [replacing, setReplacing] = useState(false);
-  const [verifyWarning, setVerifyWarning] = useState(null); // { email } - hiển thị sau khi đăng nhập thành công
+  const [verifyWarning, setVerifyWarning] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
   const { onLogin } = useContext(AuthContext);
   const navigate = useNavigate();
   const googleBtnRef = useRef(null);
   const googleInitialized = useRef(false);
 
-  // --- Hàm parse tên thiết bị từ message ---
   function extractDeviceName(message) {
     const match = message.match(/đang được dùng trên "([^"]+)"/);
     return match ? match[1] : 'thiết bị khác';
   }
 
+  const validateForm = () => {
+    const errors = {};
+    if (!email.trim()) {
+      errors.email = 'Vui lòng nhập email';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Email không đúng định dạng';
+    }
+    if (!password) {
+      errors.password = 'Vui lòng nhập mật khẩu';
+    } else if (password.length < 6) {
+      errors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
-    setLoading(true);
     setEmailNotVerified(null);
     setDeviceConflict(null);
     setVerifyWarning(null);
+
+    if (!validateForm()) return;
+
+    setLoading(true);
 
     const deviceId = await deviceService.getDeviceId();
     const deviceName = deviceService.getDeviceName();
 
     try {
       const response = await apiService.login({ email, password, deviceId, deviceName });
-      // Nếu email chưa verified → vẫn cho đăng nhập nhưng hiển thị cảnh báo
       if (!response.user.emailVerified) {
         setVerifyWarning({ email });
       }
       onLogin(response.user, response.token);
     } catch (err) {
-      // Nếu conflict thiết bị → hiện hộp thoại hỏi
       if (err.message && err.message.includes('Tài khoản đang được dùng trên')) {
         const existingDeviceName = extractDeviceName(err.message);
         setDeviceConflict({ existingDeviceName, email, password });
@@ -88,7 +107,6 @@ export default function LoginPage() {
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || googleInitialized.current) return;
 
-    // Chờ script Google Identity Services load xong
     const checkGoogle = () => {
       if (typeof window.google?.accounts?.id === 'object') {
         googleInitialized.current = true;
@@ -130,80 +148,75 @@ export default function LoginPage() {
       return false;
     };
 
-    // Thử ngay lập tức, nếu chưa có thì thử lại sau mỗi 200ms
     if (!checkGoogle()) {
       const interval = setInterval(() => {
         if (checkGoogle()) clearInterval(interval);
       }, 200);
-      // Dừng kiểm tra sau 10 giây
       setTimeout(() => clearInterval(interval), 10000);
     }
   }, [onLogin]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12 sm:px-6">
-      <div className="w-full rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10">
+      <Card padding="lg" className="w-full">
         <NoteBanner page="login" />
         <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Đăng nhập</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Đăng nhập để tiếp tục ôn thi trắc nghiệm.</p>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-600"
-            />
-          </div>
+        <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setFieldErrors(prev => ({ ...prev, email: '' })); }}
+            error={fieldErrors.email}
+            placeholder="your@email.com"
+            required
+          />
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Mật khẩu</label>
-              <Link
-                to="/forgot-password"
-                className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition"
-              >
+          <Input
+            label="Mật khẩu"
+            type="password"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => ({ ...prev, password: '' })); }}
+            error={fieldErrors.password}
+            placeholder="••••••••"
+            required
+            helperText={
+              <Link to="/forgot-password" className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition">
                 Quên mật khẩu?
               </Link>
-            </div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-600"
-            />
-          </div>
+            }
+          />
 
-          {error && <p className="rounded-xl bg-rose-50 dark:bg-rose-900/30 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
-
-          {/* Email not verified */}
-          {emailNotVerified && (
-            <div className="rounded-2xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-5">
-              <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                Nhấn nút bên dưới để gửi lại mã OTP xác thực email.
-              </p>
-              <button
-                type="button"
-                onClick={handleResendVerification}
-                disabled={loading}
-                className="w-full rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
-              >
-                {loading ? 'Đang gửi...' : 'Gửi lại mã OTP'}
-              </button>
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl bg-danger-50 dark:bg-danger-900/30 px-4 py-3 text-sm text-danger-700 dark:text-danger-300" role="alert">
+              <WarningCircle size={18} weight="fill" className="flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition disabled:bg-slate-300 dark:disabled:bg-slate-600"
-          >
-            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-          </button>
+          {emailNotVerified && (
+            <div className="rounded-2xl border border-warning-200 dark:border-warning-700 bg-warning-50 dark:bg-warning-900/30 p-5">
+              <p className="text-sm text-warning-700 dark:text-warning-300 mb-3">
+                Nhấn nút bên dưới để gửi lại mã OTP xác thực email.
+              </p>
+              <Button
+                type="button"
+                variant="warning"
+                size="sm"
+                onClick={handleResendVerification}
+                loading={loading}
+                className="w-full"
+              >
+                Gửi lại mã OTP
+              </Button>
+            </div>
+          )}
+
+          <Button type="submit" variant="primary" loading={loading} className="w-full">
+            Đăng nhập
+          </Button>
         </form>
 
         {GOOGLE_CLIENT_ID && (
@@ -216,7 +229,9 @@ export default function LoginPage() {
 
             <div className="mt-6 flex justify-center">
               {googleLoading ? (
-                <div className="text-sm text-slate-500 dark:text-slate-400">Đang đăng nhập với Google...</div>
+                <Button variant="secondary" loading disabled className="w-full">
+                  Đang đăng nhập với Google...
+                </Button>
               ) : (
                 <div ref={googleBtnRef}></div>
               )}
@@ -230,16 +245,14 @@ export default function LoginPage() {
             Đăng ký ngay
           </Link>
         </p>
-      </div>
+      </Card>
 
       {/* Modal xác nhận đổi thiết bị */}
       {deviceConflict && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="mx-4 w-full max-w-md rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30">
-              <svg className="h-8 w-8 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-              </svg>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in" onClick={() => !replacing && setDeviceConflict(null)}>
+          <div className="mx-4 w-full max-w-md rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10 text-center animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-warning-50 dark:bg-warning-900/30">
+              <WarningCircle size={32} weight="fill" className="text-warning-600 dark:text-warning-400" />
             </div>
             <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Thiết bị đã tồn tại</h2>
             <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -253,20 +266,22 @@ export default function LoginPage() {
             </p>
 
             <div className="mt-6 flex gap-3">
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => setDeviceConflict(null)}
                 disabled={replacing}
-                className="flex-1 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition disabled:opacity-50"
+                className="flex-1"
               >
                 Huỷ
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="warning"
                 onClick={handleReplaceDevice}
-                disabled={replacing}
-                className="flex-1 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white hover:bg-amber-700 transition disabled:opacity-50"
+                loading={replacing}
+                className="flex-1"
               >
-                {replacing ? 'Đang xử lý...' : 'Xoá và đăng nhập'}
-              </button>
+                Xoá và đăng nhập
+              </Button>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../services/apiService';
+import { PushPin } from '@phosphor-icons/react';
 
 export default function NoteBanner({ page = 'dashboard' }) {
   const [note, setNote] = useState('');
@@ -24,10 +25,10 @@ export default function NoteBanner({ page = 'dashboard' }) {
   if (!loaded || !note) return null;
 
   return (
-    <div className="mb-6 rounded-3xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-4">
+    <div className="mb-6 rounded-3xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-700 p-4 animate-fade-in">
       <div className="flex items-start gap-3">
-        <span className="text-lg flex-shrink-0 mt-0.5">📌</span>
-        <p className="flex-1 text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">{note}</p>
+        <PushPin size={20} weight="fill" className="flex-shrink-0 mt-0.5 text-warning-600 dark:text-warning-400" />
+        <p className="flex-1 text-sm text-warning-800 dark:text-warning-200 whitespace-pre-wrap">{note}</p>
       </div>
     </div>
   );

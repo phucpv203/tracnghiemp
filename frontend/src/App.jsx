@@ -7,6 +7,7 @@
  *    Nếu token sai/hết hạn/phiên bị thay thế → auto logout.
  * 2. 1 tài khoản 1 thiết bị: polling /auth/me mỗi 30 giây.
  *    Nếu backend trả 401 với code=SESSION_REPLACED → user bị đá ra.
+ * 3. Cập nhật document.title theo trang hiện tại
  */
 import { useState, useEffect, createContext, useRef, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
@@ -30,9 +31,11 @@ import AdminEditQuestions from './pages/AdminEditQuestions';
 import AdminNote from './pages/AdminNote';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
+import { Skeleton } from './components/ui';
 import { authService } from './services/authService';
 import { apiService, setOnUnauthorized } from './services/apiService';
 import { fingerprintService } from './services/fingerprintService';
+import { Sun, Moon, Spinner } from '@phosphor-icons/react';
 
 export const AuthContext = createContext(null);
 export const ThemeContext = createContext({ dark: false, toggleTheme: () => {} });
@@ -43,10 +46,9 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dark, setDark] = useState(() => {
-    // Mặc định sáng, chỉ chuyển sang tối khi người dùng chủ động bật
     const saved = localStorage.getItem('theme');
     if (saved) return saved === 'dark';
-    return false; // mặc định là sáng
+    return false;
   });
   const navigate = useNavigate();
   const pollRef = useRef(null);
@@ -59,16 +61,23 @@ function App() {
     });
   }, []);
 
-  // Apply/remove dark class on <html>
+  // Apply/remove dark class on <html> và update document theme meta
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      metaTheme.content = dark ? '#0f172a' : '#f5f5f4';
+    }
   }, [dark]);
 
-  // Khởi tạo Fingerprint.js ngay khi app mount (để cache fingerprint sớm)
+  // Set document title mặc định
   useEffect(() => {
-    fingerprintService.init().catch(() => {
-      // Silent fail, fingerprint sẽ được init sau khi cần
-    });
+    document.title = 'Hệ thống ôn thi trắc nghiệm';
+  }, []);
+
+  // Khởi tạo Fingerprint.js ngay khi app mount
+  useEffect(() => {
+    fingerprintService.init().catch(() => {});
   }, []);
 
   // Verify token khi app mount
@@ -88,7 +97,6 @@ function App() {
         }
       } catch (e) {
         if (!cancelled) {
-          // /auth/me trả 401 → token hết hạn/sai/bị thay thế
           authService.clearUser();
           setUser(null);
         }
@@ -99,7 +107,7 @@ function App() {
     return () => { cancelled = true; };
   }, []);
 
-  // Polling để phát hiện phiên bị thay thế từ thiết bị khác
+  // Polling để phát hiện phiên bị thay thế
   useEffect(() => {
     if (!user) {
       if (pollRef.current) {
@@ -110,10 +118,8 @@ function App() {
     }
     pollRef.current = setInterval(async () => {
       try {
-        await apiService.me(); // nếu 401 sẽ trigger onUnauthorized
-      } catch (_) {
-        // đã được xử lý trong request()
-      }
+        await apiService.me();
+      } catch (_) {}
     }, POLL_INTERVAL_MS);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -121,12 +127,11 @@ function App() {
     };
   }, [user]);
 
-  // Đăng ký callback khi nhận 401 từ bất kỳ API call nào
+  // Đăng ký callback khi nhận 401
   useEffect(() => {
     setOnUnauthorized((message) => {
       authService.clearUser();
       setUser(null);
-      // Hiển thị alert đơn giản, có thể thay bằng toast
       alert(message);
       navigate('/login', { replace: true });
     });
@@ -142,9 +147,7 @@ function App() {
   const onLogout = async () => {
     try {
       await apiService.logout();
-    } catch (_) {
-      // Bỏ qua lỗi nếu API không khả dụng (vẫn logout local)
-    }
+    } catch (_) {}
     authService.clearUser();
     setUser(null);
     navigate('/login');
@@ -152,14 +155,23 @@ function App() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
-        Đang tải...
+      <div className="flex min-h-screen flex-col items-center justify-center bg-stone-100 dark:bg-slate-900 animate-fade-in">
+        <div className="flex flex-col items-center gap-6">
+          <Spinner size={40} weight="bold" className="text-primary-600 animate-spin" />
+          <div className="space-y-3 text-center">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Đang tải ứng dụng...</p>
+            <div className="w-48 mx-auto space-y-2">
+              <Skeleton variant="text" />
+              <Skeleton variant="text" width="60%" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <AuthContext.Provider value={{ user, onLogin, onLogout }}>
+    <AuthContext.Provider value={{ user, loading, onLogin, onLogout }}>
       <ThemeContext.Provider value={{ dark, toggleTheme }}>
         <div className="min-h-screen bg-stone-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-200">
           <Routes>
@@ -258,16 +270,12 @@ function App() {
         <button
           onClick={toggleTheme}
           aria-label={dark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
-          className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-slate-700 shadow-lg border border-slate-200 dark:border-slate-600 hover:shadow-xl transition-all duration-200 hover:scale-110"
+          className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-slate-700 shadow-lg border border-slate-200 dark:border-slate-600 hover:shadow-xl transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
         >
           {dark ? (
-            <svg className="h-6 w-6 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-            </svg>
+            <Sun size={24} weight="fill" className="text-warning-400" />
           ) : (
-            <svg className="h-6 w-6 text-slate-700" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-            </svg>
+            <Moon size={24} weight="fill" className="text-slate-700" />
           )}
         </button>
       </div>
