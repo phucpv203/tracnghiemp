@@ -1,16 +1,9 @@
-/**
- * TopUpPage - Trang nạp thêm điểm tích hợp PayOS
- *
- * Cơ chế:
- * 1. User chọn gói điểm → gọi API tạo link thanh toán PayOS
- * 2. Redirect user đến cổng thanh toán PayOS
- * 3. Sau khi thanh toán, PayOS redirect về trang này
- * 4. Kiểm tra trạng thái thanh toán và cộng điểm
- */
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
+import { Button, Card, Toast } from '../components/ui';
+import { ArrowLeft, SignOut, Coin, ChatTeardropDots } from '@phosphor-icons/react';
 
 const TOPUP_PACKAGES = [
   { points: 50, label: '50 điểm', price: '50,000₫', amount: 50000 },
@@ -18,11 +11,6 @@ const TOPUP_PACKAGES = [
   { points: 150, label: '150 điểm', price: '150,000₫', amount: 150000 },
 ];
 
-/**
- * Parse query params từ URL (cả trước và sau hash).
- * Với HashRouter, PayOS đặt params ở root URL (?key=val#/path),
- * useSearchParams chỉ đọc params sau hash, nên cần parse thủ công.
- */
 function getPayOSParams() {
   const params = new URLSearchParams(window.location.search);
   return {
@@ -39,42 +27,35 @@ export default function TopUpPage() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // Xử lý khi được redirect về từ PayOS
-  useEffect(() => {
-    // PayOS trả về params ở root URL (trước hash), không phải trong hash route
-    // VD: https://domain.com/?cancel=false&code=00&orderCode=123&status=PAID#/topup
-    const { cancel, code, orderCode } = getPayOSParams();
+  const showToast = (message, type) => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
-    if (!orderCode) return; // Không có params PayOS → bỏ qua
+  useEffect(() => {
+    const { cancel, code, orderCode } = getPayOSParams();
+    if (!orderCode) return;
 
     if (cancel === 'false' && code === '00') {
-      // Thanh toán thành công: gọi backend kiểm tra
       (async () => {
         try {
           const result = await apiService.checkPayment(orderCode);
           if (result.status === 'paid') {
-            setToast({
-              message: `✅ Nạp ${result.points} điểm thành công qua PayOS!`,
-              type: 'success',
-            });
+            showToast(`✅ Nạp ${result.points} điểm thành công qua PayOS!`, 'success');
             setTimeout(() => {
               setToast(null);
-              // Xoá params PayOS khỏi URL trước khi chuyển về trang chủ
               window.history.replaceState({}, '', window.location.origin + window.location.pathname + '#/trang-chu');
               navigate('/trang-chu', { replace: true });
             }, 2000);
           } else {
-            setToast({ message: 'Giao dịch đang được xử lý. Vui lòng kiểm tra lại sau.', type: 'info' });
-            setTimeout(() => setToast(null), 5000);
+            showToast('Giao dịch đang được xử lý. Vui lòng kiểm tra lại sau.', 'info');
           }
         } catch (err) {
-          setToast({ message: err.message || 'Lỗi kiểm tra giao dịch.', type: 'error' });
-          setTimeout(() => setToast(null), 3000);
+          showToast(err.message || 'Lỗi kiểm tra giao dịch.', 'error');
         }
       })();
     } else if (cancel === 'true') {
-      setToast({ message: 'Bạn đã huỷ giao dịch thanh toán.', type: 'info' });
-      setTimeout(() => setToast(null), 3000);
+      showToast('Bạn đã huỷ giao dịch thanh toán.', 'info');
     }
   }, [navigate]);
 
@@ -82,16 +63,13 @@ export default function TopUpPage() {
     setLoading(true);
     try {
       const result = await apiService.createPayment(pkg.points);
-
-      // Redirect đến trang thanh toán PayOS
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
       } else {
         throw new Error('Không nhận được link thanh toán.');
       }
     } catch (error) {
-      setToast({ message: error.message || 'Nạp điểm thất bại.', type: 'error' });
-      setTimeout(() => setToast(null), 3000);
+      showToast(error.message || 'Nạp điểm thất bại.', 'error');
     } finally {
       setLoading(false);
     }
@@ -99,80 +77,57 @@ export default function TopUpPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-8 flex flex-col gap-4 rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Nạp thêm điểm</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">Xin chào, {user?.name || user?.email}</h1>
-          <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-            Chọn gói điểm để nạp vào tài khoản.<p className="flex-1 text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">NẾU GẶP VẤN ĐỀ KHI NẠP ĐIỂM LIÊN HỆ</p>{' '}
-            <Link
-              to="/lien-he"
-              className="inline-flex items-center gap-1.5 font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.49 10.04c-.27-.11-.55-.16-.84-.16h-1.4v3.38h1.4c.29 0 .57-.05.84-.16.27-.11.5-.26.7-.46.2-.2.35-.43.46-.7.11-.27.16-.56.16-.87 0-.31-.05-.6-.16-.87-.11-.27-.26-.5-.46-.7-.2-.2-.43-.35-.7-.46zM12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm-.5 16.54H8.25V7.46h3.25c.69 0 1.33.13 1.92.39.59.26 1.1.62 1.53 1.08.43.46.77 1 1.01 1.63.24.63.36 1.32.36 2.07 0 .75-.12 1.44-.36 2.07-.24.63-.58 1.17-1.01 1.63-.43.46-.94.82-1.53 1.08-.59.26-1.23.39-1.92.39zm5.5-2.89c-.11.27-.26.5-.46.7-.2.2-.43.35-.7.46-.27.11-.56.16-.86.16-.3 0-.59-.05-.86-.16-.27-.11-.5-.26-.7-.46-.2-.2-.35-.43-.46-.7-.11-.27-.16-.56-.16-.87 0-.31.05-.6.16-.87.11-.27.26-.5.46-.7.2-.2.43-.35.7-.46.27-.11.56-.16.86-.16.3 0 .59.05.86.16.27.11.5.26.7.46.2.2.35.43.46.7.11.27.16.56.16.87 0 .31-.05.6-.16.87z"/>
-              </svg>
-              ZALO
-            </Link>
-          </p>
+      <Card padding="md" className="mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Nạp thêm điểm</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">Xin chào, {user?.name || user?.email}</h1>
+            <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+              Chọn gói điểm để nạp vào tài khoản.
+            </p>
+            <p className="mt-1 text-sm text-warning-800 dark:text-warning-200">
+              NẾU GẶP VẤN ĐỀ KHI NẠP ĐIỂM{' '}
+              <Link to="/lien-he" className="inline-flex items-center gap-1 font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition">
+                <ChatTeardropDots size={16} weight="fill" />
+                LIÊN HỆ ZALO
+              </Link>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" size="sm" onClick={() => navigate('/trang-chu')}>
+              <ArrowLeft size={16} weight="bold" />
+              Quay lại
+            </Button>
+            <Button variant="primary" size="sm" onClick={onLogout}>
+              <SignOut size={16} weight="bold" />
+              Đăng xuất
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/trang-chu')}
-            className="rounded-2xl bg-slate-100 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-          >
-            ← Quay lại Trang chủ
-          </button>
-          <button
-            onClick={onLogout}
-            className="self-start rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </div>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-3">
         {TOPUP_PACKAGES.map((pkg) => (
-          <div
-            key={pkg.points}
-            className="rounded-3xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-8 shadow-sm dark:shadow-slate-700/30 flex flex-col items-center text-center hover:shadow-md transition"
-          >
-            <div className="mb-4 rounded-full bg-amber-50 dark:bg-amber-900/30 p-4">
-              <span className="text-4xl">💰</span>
+          <Card key={pkg.points} padding="lg" hover className="flex flex-col items-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-warning-50 dark:bg-warning-900/30">
+              <Coin size={32} weight="fill" className="text-warning-600 dark:text-warning-400" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{pkg.label}</h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Nạp {pkg.points} điểm vào tài khoản
-            </p>
-            <p className="mt-1 text-lg font-semibold text-amber-600">{pkg.price}</p>
-            <button
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Nạp {pkg.points} điểm vào tài khoản</p>
+            <p className="mt-1 text-lg font-semibold text-warning-600 dark:text-warning-400">{pkg.price}</p>
+            <Button
+              variant="warning"
               onClick={() => handleTopUp(pkg)}
-              disabled={loading}
-              className={`mt-6 w-full rounded-2xl px-6 py-3 text-sm font-semibold text-white transition ${
-                loading
-                  ? 'bg-slate-300 cursor-not-allowed'
-                  : 'bg-amber-600 hover:bg-amber-700'
-              }`}
+              loading={loading}
+              className="mt-6 w-full"
             >
-              {loading ? 'Đang tạo link thanh toán...' : `Nạp ${pkg.points} điểm`}
-            </button>
-          </div>
+              Nạp {pkg.points} điểm
+            </Button>
+          </Card>
         ))}
       </div>
 
-      {/* Toast notification */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 rounded-2xl px-6 py-4 shadow-lg text-sm font-semibold transition-all ${
-          toast.type === 'success'
-            ? 'bg-green-50 border border-green-200 text-green-700'
-            : toast.type === 'info'
-            ? 'bg-sky-50 border border-sky-200 text-sky-700'
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          {toast.message}
-        </div>
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </main>
   );
 }

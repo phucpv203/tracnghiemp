@@ -1,8 +1,10 @@
-import { useState, useRef, useContext, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { deviceService } from '../services/deviceService';
 import { AuthContext } from '../App';
+import { Button, Card, Input } from '../components/ui';
+import { WarningCircle, CheckCircle, ArrowLeft } from '@phosphor-icons/react';
 
 export default function DeviceChangeOtpPage() {
   const location = useLocation();
@@ -15,38 +17,26 @@ export default function DeviceChangeOtpPage() {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [sending, setSending] = useState(false);
-  const [step, setStep] = useState(email && password ? 'confirm' : 'email'); // 'email' | 'confirm' | 'otp' | 'limit'
+  const [step, setStep] = useState(email && password ? 'confirm' : 'email');
   const [emailInput, setEmailInput] = useState(email || '');
   const [passwordInput, setPasswordInput] = useState(password || '');
   const [remainingDays, setRemainingDays] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState({});
   const otpRefs = useRef([]);
   const navigate = useNavigate();
   const { onLogin } = useContext(AuthContext);
   const countdownRef = useRef(null);
 
-  // Cleanup interval khi unmount
   useEffect(() => {
-    return () => {
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current);
-      }
-    };
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, []);
 
-
   const startCountdown = () => {
-    // Clear interval cũ nếu có
-    if (countdownRef.current) {
-      clearInterval(countdownRef.current);
-    }
+    if (countdownRef.current) clearInterval(countdownRef.current);
     setCountdown(300);
     countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownRef.current);
-          countdownRef.current = null;
-          return 0;
-        }
+        if (prev <= 1) { clearInterval(countdownRef.current); countdownRef.current = null; return 0; }
         return prev - 1;
       });
     }, 1000);
@@ -54,323 +44,178 @@ export default function DeviceChangeOtpPage() {
 
   const handleRequestOtp = async (event) => {
     event?.preventDefault();
-    if (sending) return; // chặn double click
-    setSending(true);
-    setError('');
-    setMessage('');
+    const errors = {};
+    if (!emailInput.trim()) errors.email = 'Vui lòng nhập email';
+    if (!passwordInput.trim()) errors.password = 'Vui lòng nhập mật khẩu';
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    if (sending) return;
+    setSending(true); setError(''); setMessage('');
     try {
-      const result = await apiService.requestDeviceOtp({
-        email: emailInput,
-        password: passwordInput
-      });
+      const result = await apiService.requestDeviceOtp({ email: emailInput, password: passwordInput });
       setMessage(result.message);
       setStep('otp');
       startCountdown();
     } catch (err) {
-      // Check for limit error
-      if (err.message && err.message.includes('mỗi tuần')) {
+      if (err.message?.includes('mỗi tuần')) {
         setStep('limit');
-        // Extract remaining days
         const match = err.message.match(/sau (\d+) ngày/);
         setRemainingDays(match ? parseInt(match[1]) : 7);
       }
       setError(err.message);
-    } finally {
-      setSending(false);
-    }
+    } finally { setSending(false); }
   };
 
   const handleResendOtp = async () => {
     if (countdown > 0 || sending || !emailInput) return;
-    setSending(true);
-    setError('');
+    setSending(true); setError('');
     try {
-      const result = await apiService.requestDeviceOtp({
-        email: emailInput,
-        password: passwordInput
-      });
+      await apiService.requestDeviceOtp({ email: emailInput, password: passwordInput });
       setMessage('Mã OTP mới đã được gửi đến email của bạn.');
       startCountdown();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSending(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setSending(false); }
   };
 
   const handleOtpChange = (index, value) => {
     if (value && !/^\d$/.test(value)) return;
-    
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
+    const newOtp = [...otp]; newOtp[index] = value; setOtp(newOtp);
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
   };
 
   const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
+    if (e.key === 'Backspace' && !otp[index] && index > 0) otpRefs.current[index - 1]?.focus();
   };
 
   const handleOtpPaste = (e) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text/plain').trim();
     if (!/^\d{6}$/.test(pastedData)) return;
-    
-    const digits = pastedData.split('');
-    setOtp(digits);
-    otpRefs.current[5]?.focus();
+    const digits = pastedData.split(''); setOtp(digits); otpRefs.current[5]?.focus();
   };
 
   const handleVerifyOtp = async () => {
     const otpCode = otp.join('');
-    if (otpCode.length !== 6) {
-      setError('Vui lòng nhập đủ 6 mã số OTP.');
-      return;
-    }
-    
-    setLoading(true);
-    setError('');
+    if (otpCode.length !== 6) { setError('Vui lòng nhập đủ 6 mã số OTP.'); return; }
+    setLoading(true); setError('');
     try {
       const deviceId = await deviceService.getDeviceId();
       const deviceName = deviceService.getDeviceName();
-      
-      const result = await apiService.verifyDeviceOtp({
-        email: emailInput,
-        otp: otpCode,
-        deviceId,
-        deviceName
-      });
+      const result = await apiService.verifyDeviceOtp({ email: emailInput, otp: otpCode, deviceId, deviceName });
       onLogin(result.user, result.token);
       navigate('/trang-chu');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message); }
+    finally { setLoading(false); }
   };
 
-  // Step: Limit reached
   if (step === 'limit') {
     return (
       <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12 sm:px-6">
-        <div className="w-full max-w-md mx-auto rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
-            <svg className="w-8 h-8 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-            </svg>
+        <Card padding="lg" className="w-full max-w-md mx-auto text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-warning-50 dark:bg-warning-900/30">
+            <WarningCircle size={32} weight="fill" className="text-warning-600 dark:text-warning-400" />
           </div>
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Giới hạn đổi thiết bị</h1>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-            Bạn chỉ được phép đổi thiết bị <strong>1 lần mỗi tuần</strong>.
-          </p>
-          <p className="mt-2 text-sm text-amber-600 dark:text-amber-400 font-semibold">
-            Vui lòng thử lại sau {remainingDays} ngày.
-          </p>
-          <button
-            onClick={() => navigate('/login')}
-            className="mt-6 w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition"
-          >
-            Quay lại đăng nhập
-          </button>
-        </div>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Bạn chỉ được phép đổi thiết bị <strong>1 lần mỗi tuần</strong>.</p>
+          <p className="mt-2 text-sm text-warning-600 dark:text-warning-400 font-semibold">Vui lòng thử lại sau {remainingDays} ngày.</p>
+          <Button variant="primary" onClick={() => navigate('/login')} className="mt-6 w-full">Quay lại đăng nhập</Button>
+        </Card>
       </div>
     );
   }
 
-  // Step: Confirm (hiển thị nút Đồng ý đổi thiết bị trước, chưa gửi OTP)
   if (step === 'confirm') {
     return (
       <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12 sm:px-6">
-        <div className="w-full max-w-md mx-auto rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/30">
-            <svg className="h-8 w-8 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-            </svg>
+        <Card padding="lg" className="w-full max-w-md mx-auto text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-warning-50 dark:bg-warning-900/30">
+            <WarningCircle size={32} weight="fill" className="text-warning-600 dark:text-warning-400" />
           </div>
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Xác nhận đổi thiết bị</h1>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-            Tài khoản của bạn đang được đăng nhập trên thiết bị:
-          </p>
-          <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-200">
-            "{existingDeviceName}"
-          </p>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-            Bạn có muốn đăng nhập trên thiết bị này không?
-          </p>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Tài khoản của bạn đang được đăng nhập trên thiết bị:</p>
+          <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-200">"{existingDeviceName}"</p>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">Bạn có muốn đăng nhập trên thiết bị này không?</p>
 
-          <div className="mt-4 rounded-xl bg-amber-50 dark:bg-amber-900/30 px-4 py-4 border border-amber-200 dark:border-amber-700">
-            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+          <div className="mt-4 rounded-xl bg-warning-50 dark:bg-warning-900/30 p-4 border border-warning-200 dark:border-warning-700">
+            <p className="text-sm font-bold text-warning-700 dark:text-warning-300">
               ⚠ Lưu ý: bạn chỉ được đổi thiết bị <strong>1 lần mỗi tuần</strong>.
             </p>
           </div>
 
           <div className="mt-6 flex gap-3">
-            <button
-              onClick={() => navigate('/login')}
-              className="flex-1 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition"
-            >
-              Huỷ
-            </button>
-            <button
-              onClick={() => {
-                setStep('otp');
-                handleRequestOtp();
-              }}
-              disabled={sending}
-              className="flex-1 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white hover:bg-amber-700 transition disabled:opacity-50"
-            >
-              {sending ? 'Đang xử lý...' : 'Đồng ý đổi thiết bị'}
-            </button>
+            <Button variant="secondary" onClick={() => navigate('/login')} className="flex-1">Huỷ</Button>
+            <Button variant="warning" onClick={() => { setStep('otp'); handleRequestOtp(); }} loading={sending} className="flex-1">Đồng ý đổi thiết bị</Button>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
 
-  // Step: OTP
   if (step === 'otp') {
     return (
       <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12 sm:px-6">
-        <div className="w-full max-w-md mx-auto rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10">
+        <Card padding="lg" className="w-full max-w-md mx-auto">
           <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Xác nhận đổi thiết bị</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            {existingDeviceName ? (
-              <>Tài khoản của bạn đang được đăng nhập trên <strong className="text-slate-900 dark:text-slate-200">"{existingDeviceName}"</strong>.</>
-            ) : (
-              <>Một thiết bị khác đang đăng nhập vào tài khoản của bạn.</>
-            )}
+            {existingDeviceName ? <>Tài khoản của bạn đang được đăng nhập trên <strong className="text-slate-900 dark:text-slate-200">"{existingDeviceName}"</strong>.</> : <>Một thiết bị khác đang đăng nhập vào tài khoản của bạn.</>}
           </p>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Nhập mã OTP gồm 6 số được gửi đến <strong className="text-slate-900 dark:text-slate-200">{emailInput}</strong> để xác nhận đổi thiết bị.
-          </p>
-          <p className="mt-2 text-sm font-medium text-amber-600 dark:text-amber-400">
-            💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.
-          </p>
-          <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 px-4 py-3 border border-amber-200 dark:border-amber-700">
-            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
-              ⚠ Lưu ý: bạn chỉ được đổi thiết bị <strong>1 lần mỗi tuần</strong>.
-            </p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Nhập mã OTP gồm 6 số được gửi đến <strong className="text-slate-900 dark:text-slate-200">{emailInput}</strong> để xác nhận.</p>
+          <p className="mt-2 text-sm font-medium text-warning-600 dark:text-warning-400">💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.</p>
+          <div className="mt-3 rounded-xl bg-warning-50 dark:bg-warning-900/30 p-3 border border-warning-200 dark:border-warning-700">
+            <p className="text-sm font-bold text-warning-700 dark:text-warning-300">⚠ Lưu ý: bạn chỉ được đổi thiết bị <strong>1 lần mỗi tuần</strong>.</p>
           </div>
 
           <div className="mt-8">
             <div className="flex justify-center gap-3">
               {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(el) => (otpRefs.current[index] = el)}
-                  type="text"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleOtpChange(index, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                <input key={index} ref={(el) => (otpRefs.current[index] = el)} type="text" maxLength={1} value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(index, e)}
                   onPaste={index === 0 ? handleOtpPaste : undefined}
-                  className="w-12 h-14 text-center text-2xl font-bold rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-600"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                />
+                  className="w-12 h-14 text-center text-2xl font-bold rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800 transition"
+                  inputMode="numeric" autoComplete="one-time-code" aria-label={`Mã OTP số ${index + 1}`} />
               ))}
             </div>
 
-            <button
-              onClick={handleVerifyOtp}
-              disabled={loading}
-              className="mt-6 w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition disabled:opacity-50"
-            >
-              {loading ? 'Đang xác thực...' : 'Xác nhận đổi thiết bị'}
-            </button>
+            <Button onClick={handleVerifyOtp} loading={loading} className="mt-6 w-full">Xác nhận đổi thiết bị</Button>
 
             <div className="mt-4 text-center">
-              <button
-                onClick={handleResendOtp}
-                disabled={countdown > 0 || sending}
-                className={`text-sm font-medium transition ${
-                  countdown > 0
-                    ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed'
-                    : 'text-slate-900 dark:text-slate-200 hover:text-slate-600 dark:hover:text-slate-400'
-                }`}
-              >
-                {countdown > 0
-                  ? `Gửi lại mã (${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')})`
-                  : 'Gửi lại mã OTP'}
+              <button onClick={handleResendOtp} disabled={countdown > 0 || sending}
+                className={`text-sm font-medium transition ${countdown > 0 ? 'text-slate-400 dark:text-slate-500 cursor-not-allowed' : 'text-slate-900 dark:text-slate-200 hover:text-slate-600 dark:hover:text-slate-400'}`}>
+                {countdown > 0 ? `Gửi lại mã (${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')})` : 'Gửi lại mã OTP'}
               </button>
             </div>
           </div>
 
-          {message && (
-            <p className="mt-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">{message}</p>
-          )}
-          {error && (
-            <p className="mt-4 rounded-xl bg-rose-50 dark:bg-rose-900/30 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>
-          )}
+          {message && <div className="mt-4 flex items-center gap-2 rounded-xl bg-success-50 dark:bg-success-900/30 px-4 py-3 text-sm text-success-700 dark:text-success-300">{message}</div>}
+          {error && <div className="mt-4 flex items-center gap-2 rounded-xl bg-danger-50 dark:bg-danger-900/30 px-4 py-3 text-sm text-danger-700 dark:text-danger-300" role="alert"><WarningCircle size={18} weight="fill" /><span>{error}</span></div>}
 
           <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-            <Link to="/login" className="font-semibold text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-400">
-              Quay lại
-            </Link>
+            <Link to="/login" className="font-semibold text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-400">Quay lại</Link>
           </p>
-        </div>
+        </Card>
       </div>
     );
   }
 
-  // Step: Email form (initial)
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-12 sm:px-6">
-      <div className="w-full max-w-md mx-auto rounded-3xl bg-white dark:bg-slate-800 p-8 shadow-xl dark:shadow-slate-800 sm:p-10">
+      <Card padding="lg" className="w-full max-w-md mx-auto">
         <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Đổi thiết bị đăng nhập</h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-          Nhập email và mật khẩu để nhận mã OTP xác nhận đổi thiết bị.
-        </p>
-        <p className="mt-1 text-sm font-medium text-amber-600 dark:text-amber-400">
-          💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.
-        </p>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Nhập email và mật khẩu để nhận mã OTP xác nhận đổi thiết bị.</p>
+        <p className="mt-1 text-sm font-medium text-warning-600 dark:text-warning-400">💡 Nếu không thấy email, vui lòng kiểm tra mục <strong>Spam</strong> hoặc <strong>Thư rác</strong>.</p>
 
-        <form className="mt-8 space-y-6" onSubmit={handleRequestOtp}>
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
-            <input
-              type="email"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              required
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-600"
-              placeholder="your@email.com"
-            />
-          </div>
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Mật khẩu</label>
-            <input
-              type="password"
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              required
-              className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-600"
-              placeholder="Mật khẩu"
-            />
-          </div>
-
-          {error && <p className="rounded-xl bg-rose-50 dark:bg-rose-900/30 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={sending}
-            className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition disabled:opacity-50"
-          >
-            {sending ? 'Đang gửi...' : 'Gửi mã OTP'}
-          </button>
+        <form className="mt-8 space-y-5" onSubmit={handleRequestOtp} noValidate>
+          <Input label="Email" type="email" value={emailInput} onChange={(e) => { setEmailInput(e.target.value); setFieldErrors(p => ({...p, email: ''})); }} error={fieldErrors.email} placeholder="your@email.com" required />
+          <Input label="Mật khẩu" type="password" value={passwordInput} onChange={(e) => { setPasswordInput(e.target.value); setFieldErrors(p => ({...p, password: ''})); }} error={fieldErrors.password} placeholder="Mật khẩu" required />
+          {error && <div className="flex items-center gap-2 rounded-xl bg-danger-50 dark:bg-danger-900/30 px-4 py-3 text-sm text-danger-700 dark:text-danger-300" role="alert"><WarningCircle size={18} weight="fill" /><span>{error}</span></div>}
+          <Button type="submit" variant="primary" loading={sending} className="w-full">Gửi mã OTP</Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-          <Link to="/login" className="font-semibold text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-400">
-            Quay lại đăng nhập
-          </Link>
+          <Link to="/login" className="font-semibold text-slate-900 dark:text-slate-100 hover:text-slate-600 dark:hover:text-slate-400">Quay lại đăng nhập</Link>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { apiService } from '../services/apiService';
+import { Button, Card, Toast } from '../components/ui';
+import { ArrowLeft, SignOut, PushPin, FloppyDisk, ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
 
 const PAGE_LABELS = {
   dashboard: 'Trang chủ (Dashboard)',
@@ -13,7 +15,7 @@ export default function AdminNote() {
   const { onLogout } = useContext(AuthContext);
   const [notes, setNotes] = useState({ dashboard: '', login: '', register: '' });
   const [drafts, setDrafts] = useState({ dashboard: '', login: '', register: '' });
-  const [saving, setSaving] = useState(null); // page đang lưu
+  const [saving, setSaving] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
 
@@ -62,7 +64,7 @@ export default function AdminNote() {
     return (
       <main className="mx-auto max-w-6xl px-4 py-10">
         <div className="flex justify-center items-center min-h-[200px]">
-          <div className="text-slate-600 dark:text-slate-400">Đang tải...</div>
+          <p className="text-slate-600 dark:text-slate-400">Đang tải...</p>
         </div>
       </main>
     );
@@ -70,36 +72,25 @@ export default function AdminNote() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-6 rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30">
+      <Card padding="md" className="mb-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Quản lý lưu ý</h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Quản lý 3 dòng lưu ý riêng biệt cho từng trang.
-            </p>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Quản lý 3 dòng lưu ý riêng biệt cho từng trang.</p>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              to="/admin"
-              className="rounded-2xl bg-slate-100 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-            >
-              ← Quay lại Admin
-            </Link>
-            <button
-              onClick={onLogout}
-              className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600"
-            >
-              Đăng xuất
-            </button>
+            <Link to="/admin"><Button variant="secondary" size="sm"><ArrowLeft size={16} weight="bold" /> Quay lại Admin</Button></Link>
+            <Button variant="primary" size="sm" onClick={onLogout}><SignOut size={16} weight="bold" /> Đăng xuất</Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       <div className="space-y-6">
         {['dashboard', 'login', 'register'].map((page) => (
-          <div key={page} className="rounded-3xl bg-white dark:bg-slate-800 p-6 shadow-sm dark:shadow-slate-700/30">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1">
-              📌 Lưu ý - {PAGE_LABELS[page]}
+          <Card key={page} padding="md">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1 flex items-center gap-2">
+              <PushPin size={18} weight="fill" className="text-warning-600" />
+              Lưu ý - {PAGE_LABELS[page]}
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
               Lưu ý này sẽ hiển thị ở đầu {PAGE_LABELS[page].toLowerCase()}.
@@ -110,51 +101,33 @@ export default function AdminNote() {
                 value={drafts[page]}
                 onChange={(e) => setDrafts((prev) => ({ ...prev, [page]: e.target.value }))}
                 rows={3}
-                className="w-full rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-slate-600 resize-none"
+                className="w-full rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-800 resize-none"
                 placeholder={`Nhập nội dung lưu ý cho ${PAGE_LABELS[page].toLowerCase()}...`}
               />
 
-              {/* Preview */}
               {drafts[page] && (
-                <div className="rounded-3xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-4">
+                <div className="rounded-3xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-700 p-4">
                   <div className="flex items-start gap-3">
-                    <span className="text-lg flex-shrink-0 mt-0.5">📌</span>
-                    <p className="flex-1 text-sm text-amber-800 dark:text-amber-200 whitespace-pre-wrap">{drafts[page]}</p>
+                    <PushPin size={20} weight="fill" className="flex-shrink-0 mt-0.5 text-warning-600 dark:text-warning-400" />
+                    <p className="flex-1 text-sm text-warning-800 dark:text-warning-200 whitespace-pre-wrap">{drafts[page]}</p>
                   </div>
                 </div>
               )}
 
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => handleSave(page)}
-                  disabled={saving === page}
-                  className="rounded-2xl bg-slate-900 dark:bg-slate-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 dark:hover:bg-slate-600 disabled:bg-slate-300 dark:disabled:bg-slate-600"
-                >
-                  {saving === page ? 'Đang lưu...' : 'Lưu lưu ý'}
-                </button>
-                <button
-                  onClick={() => handleReset(page)}
-                  disabled={drafts[page] === notes[page]}
-                  className="rounded-2xl border border-slate-200 dark:border-slate-600 px-6 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Khôi phục
-                </button>
+                <Button size="sm" variant="primary" onClick={() => handleSave(page)} loading={saving === page}>
+                  <FloppyDisk size={14} weight="bold" /> Lưu lưu ý
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => handleReset(page)} disabled={drafts[page] === notes[page]}>
+                  <ArrowClockwise size={14} weight="bold" /> Khôi phục
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
-      {/* Toast notification */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 rounded-2xl px-6 py-4 shadow-lg text-sm font-semibold transition-all ${
-          toast.type === 'success' 
-            ? 'bg-green-50 border border-green-200 text-green-700' 
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          {toast.message}
-        </div>
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </main>
   );
 }
